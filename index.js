@@ -2,11 +2,9 @@ import fetch from 'node-fetch';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-// Usa la chiave Firebase già caricata come variabile ambiente
-const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-
+// Inizializza Firebase con la variabile FIREBASE_CREDENTIALS
 initializeApp({
-  credential: cert(serviceAccount),
+  credential: cert(JSON.parse(process.env.FIREBASE_CREDENTIALS))
 });
 
 const db = getFirestore();
@@ -39,6 +37,7 @@ async function salvaOsservazione(stationId, temperatura, umidita, pioggia, raffi
 async function fetchEInserisci() {
   for (const s of stazioni) {
     try {
+      // Open-Meteo
       const om = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&timezone=auto`);
       const omData = await om.json();
       const omObs = omData.current;
@@ -46,6 +45,7 @@ async function fetchEInserisci() {
         await salvaOsservazione(s.stationId, omObs.temperature_2m, omObs.relative_humidity_2m, omObs.precipitation, omObs.wind_speed_10m);
       }
 
+      // Weather.com
       if (s.apiKey) {
         const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
         const wcData = await wc.json();
