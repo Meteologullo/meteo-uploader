@@ -7,6 +7,7 @@ const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSO
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
+// Elenco completo delle stazioni (PWS + OpenMeteo)
 const stazioni = [
   {
     stationId: ICOSEN11,
@@ -190,9 +191,9 @@ async function salvaOsservazione(stationId, latitudine, longitudine, temperatura
     };
     Object.keys(dati).forEach(k => dati[k] === undefined && delete dati[k]);
     await db.collection("osservazioni").add(dati);
-    console.log(`Salvato per ${stationId}: ${temperatura}Â°C`);
+    console.log(`Salvato per ${stationId}`);
   } catch (e) {
-    console.error("Errore salvataggio:", e);
+    console.error(`Errore salvataggio ${stationId}:`, e.message);
   }
 }
 
@@ -201,33 +202,35 @@ async function fetchEInserisci() {
     try {
       // Open-Meteo
       const om = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&timezone=auto`);
+      if (!om.ok) throw new Error("Fetch Open-Meteo fallita");
       const omData = await om.json();
-      const omObs = omData.current;
-      if (omObs) {
-        await salvaOsservazione(s.stationId, s.lat, s.lon, omObs.temperature_2m, omObs.relative_humidity_2m, omObs.precipitation, omObs.wind_speed_10m);
+      const o = omData.current;
+      if (o?.temperature_2m != null) {
+        await salvaOsservazione(s.stationId, s.lat, s.lon, o.temperature_2m, o.relative_humidity_2m, o.precipitation, o.wind_speed_10m);
       }
 
-      // Weather.com
+      // Weather.com (solo se apiKey)
       if (s.apiKey) {
         const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
-        const text = await wc.text();
-        if (!text.startsWith("{")) throw new Error("Risposta non valida da Weather.com");
-        const wcData = JSON.parse(text);
-        const wcObs = wcData.observations?.[0];
-        if (wcObs) {
-          await salvaOsservazione(s.stationId, s.lat, s.lon, wcObs.metric.temp, wcObs.humidity, wcObs.metric.precipTotal, wcObs.windGust);
+        const raw = await wc.text();
+        if (!raw.startsWith("{")) return;
+        const wcData = JSON.parse(raw);
+        const d = wcData.observations?.[0];
+        if (d?.metric?.temp != null) {
+          await salvaOsservazione(s.stationId, s.lat, s.lon, d.metric.temp, d.humidity, d.metric.precipTotal, d.windGust);
         }
       }
     } catch (err) {
-      console.error("Errore per", s.stationId, err);
+      console.error("Errore per", s.stationId, ":", err.message);
     }
   }
 }
 
-console.log("Script unificato avviato:", new Date().toISOString());
+console.log("Script meteo attivo:", new Date().toISOString());
 fetchEInserisci();
 
 setInterval(() => {
-  console.log("Esecuzione ogni 10 minuti:", new Date().toISOString());
+  console.log("Aggiornamento ogni 10 minuti:", new Date().toISOString());
   fetchEInserisci();
 }, 10 * 60 * 1000);
+
