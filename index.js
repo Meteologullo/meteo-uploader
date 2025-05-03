@@ -18,7 +18,7 @@ const stazioni = [
 
 async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
-    await db.collection("osservazioni").add({
+    const dati = {
       stationId,
       latitudine,
       longitudine,
@@ -27,7 +27,9 @@ async function salvaOsservazione(stationId, latitudine, longitudine, temperatura
       pioggia,
       raffica,
       timestamp: Timestamp.now()
-    });
+    };
+    Object.keys(dati).forEach(k => dati[k] === undefined && delete dati[k]);
+    await db.collection("osservazioni").add(dati);
     console.log(`Salvato per ${stationId}: ${temperatura}Â°C`);
   } catch (e) {
     console.error("Errore salvataggio:", e);
