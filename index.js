@@ -28,7 +28,7 @@ async function salvaOsservazione(stationId, latitudine, longitudine, temperatura
       raffica,
       timestamp: Timestamp.now()
     });
-    console.log(`Salvato per ${stationId}: ${temperatura}°C`);
+    console.log(`Salvato per ${stationId}: ${temperatura}Â°C`);
   } catch (e) {
     console.error("Errore salvataggio:", e);
   }
@@ -60,8 +60,12 @@ async function fetchEInserisci() {
   }
 }
 
+// Avvia subito all'avvio
+console.log("Script meteo avviato:", new Date().toISOString());
 fetchEInserisci();
-  }
-}
 
-fetchEInserisci();
+// Esegui ogni 10 minuti
+setInterval(() => {
+  console.log("Esecuzione ogni 10 minuti:", new Date().toISOString());
+  fetchEInserisci();
+}, 10 * 60 * 1000);
