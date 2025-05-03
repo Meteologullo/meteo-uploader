@@ -2,13 +2,9 @@ import fetch from 'node-fetch';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-// Legge la variabile di ambiente con la chiave Firebase
-const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-
 // Inizializza Firebase
-initializeApp({
-  credential: cert(serviceAccount),
-});
+const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 const stazioni = [
@@ -20,10 +16,12 @@ const stazioni = [
   { stationId: "ICASAL40", lat: 38.993, lon: 16.620, apiKey: "b368cd08174d424fa8cd08174d424f20" }
 ];
 
-async function salvaOsservazione(stationId, temperatura, umidita, pioggia, raffica) {
+async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
     await db.collection("osservazioni").add({
       stationId,
+      latitudine,
+      longitudine,
       temperatura,
       umidita,
       pioggia,
@@ -44,7 +42,7 @@ async function fetchEInserisci() {
       const omData = await om.json();
       const omObs = omData.current;
       if (omObs) {
-        await salvaOsservazione(s.stationId, omObs.temperature_2m, omObs.relative_humidity_2m, omObs.precipitation, omObs.wind_speed_10m);
+        await salvaOsservazione(s.stationId, s.lat, s.lon, omObs.temperature_2m, omObs.relative_humidity_2m, omObs.precipitation, omObs.wind_speed_10m);
       }
 
       // Weather.com
@@ -53,12 +51,16 @@ async function fetchEInserisci() {
         const wcData = await wc.json();
         const wcObs = wcData.observations?.[0];
         if (wcObs) {
-          await salvaOsservazione(s.stationId, wcObs.metric.temp, wcObs.humidity, wcObs.metric.precipTotal, wcObs.windGust);
+          await salvaOsservazione(s.stationId, s.lat, s.lon, wcObs.metric.temp, wcObs.humidity, wcObs.metric.precipTotal, wcObs.windGust);
         }
       }
     } catch (err) {
       console.error("Errore per", s.stationId, err);
     }
+  }
+}
+
+fetchEInserisci();
   }
 }
 
