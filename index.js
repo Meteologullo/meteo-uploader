@@ -119,7 +119,7 @@ async function fetchEInserisci() {
   for (const s of stazioni) {
     if (s.apiKey) {
       try {
-        console.log(`Weather.com Ã¢ÂÂ ${s.stationId}`);
+        console.log(`Weather.com ÃÂ¢ÃÂÃÂ ${s.stationId}`);
         const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
         const raw = await wc.text();
         if (!raw.startsWith("{")) throw new Error("Risposta non valida da Weather.com");
@@ -133,7 +133,7 @@ async function fetchEInserisci() {
       }
     } else {
       try {
-        console.log(`OpenMeteo Ã¢ÂÂ ${s.stationId}`);
+        console.log(`OpenMeteo ÃÂ¢ÃÂÃÂ ${s.stationId}`);
         const om = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&timezone=auto`);
         const omData = await om.json();
         const o = omData.current;
