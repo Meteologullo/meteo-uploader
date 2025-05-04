@@ -154,3 +154,4 @@ setInterval(() => {
   console.log("Aggiornamento ogni 10 minuti:", new Date().toISOString());
   fetchEInserisci();
 }, 10 * 60 * 1000);
+
