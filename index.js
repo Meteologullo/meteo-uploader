@@ -53,8 +53,7 @@ const stazioni = [
   { stationId: "ROSSCENTRO", lat: 39.582, lon: 16.636, openMeteo: true },
   { stationId: "VIBOPORO", lat: 38.622, lon: 16.005, openMeteo: true },
   { stationId: "LOCRIMARINA", lat: 38.239, lon: 16.258, openMeteo: true },
-  { stationId: "SANGIOVANNI", lat: 39.261, lon: 16.694, openMeteo: true }
-,
+  { stationId: "SANGIOVANNI", lat: 39.261, lon: 16.694, openMeteo: true },
   {"stationId": "AFRICO_NUOVO", "lat": 38.0167, "lon": 16.1333, "openMeteo": true},
   {"stationId": "BRANCALEONE", "lat": 37.95, "lon": 16.0833, "openMeteo": true},
   {"stationId": "PELLARO", "lat": 38.01, "lon": 15.633, "openMeteo": true},
@@ -93,7 +92,8 @@ const stazioni = [
   {"stationId": "MONTE_CURCIO", "lat": 39.317, "lon": 16.4689, "openMeteo": true},
   {"stationId": "BOTTE_DONATO", "lat": 39.2833, "lon": 16.5667, "openMeteo": true},
   {"stationId": "RENDE", "lat": 39.3306, "lon": 16.2078, "openMeteo": true},
-  {"stationId": "GIRIFALCO", "lat": 38.8, "lon": 16.4167, "openMeteo": true}];
+  {"stationId": "GIRIFALCO", "lat": 38.8, "lon": 16.4167, "openMeteo": true}
+];
 
 async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
@@ -154,3 +154,4 @@ setInterval(() => {
   console.log("Aggiornamento ogni 10 minuti:", new Date().toISOString());
   fetchEInserisci();
 }, 10 * 60 * 1000);
+
