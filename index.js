@@ -89,6 +89,7 @@ async function salvaOsservazione(stationId, latitudine, longitudine, temperatura
 
 async function fetchEInserisci() {
   for (const s of stazioni) {
+    console.log("Stazione letta:", s); // debug aggiunto
     if (s.apiKey) {
       try {
         console.log(`Weather.com â ${s.stationId}`);
