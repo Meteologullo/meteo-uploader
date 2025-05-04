@@ -93,8 +93,7 @@ const stazioni = [
   {"stationId": "MONTE_CURCIO", "lat": 39.317, "lon": 16.4689, "openMeteo": true},
   {"stationId": "BOTTE_DONATO", "lat": 39.2833, "lon": 16.5667, "openMeteo": true},
   {"stationId": "RENDE", "lat": 39.3306, "lon": 16.2078, "openMeteo": true},
-  {"stationId": "GIRIFALCO", "lat": 38.8, "lon": 16.4167, "openMeteo": true}
-];
+  {"stationId": "GIRIFALCO", "lat": 38.8, "lon": 16.4167, "openMeteo": true}];
 
 async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
@@ -155,4 +154,3 @@ setInterval(() => {
   console.log("Aggiornamento ogni 10 minuti:", new Date().toISOString());
   fetchEInserisci();
 }, 10 * 60 * 1000);
-
