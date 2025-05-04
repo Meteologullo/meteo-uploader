@@ -53,6 +53,45 @@ const stazioni = [
   { stationId: "ROSSCENTRO", lat: 39.582, lon: 16.636, openMeteo: true },
   { stationId: "VIBOPORO", lat: 38.622, lon: 16.005, openMeteo: true },
   { stationId: "LOCRIMARINA", lat: 38.239, lon: 16.258, openMeteo: true },
+  {"stationId": "AFRICO_NUOVO", "lat": 38.0167, "lon": 16.1333, "openMeteo": true},
+  {"stationId": "BRANCALEONE", "lat": 37.95, "lon": 16.0833, "openMeteo": true},
+  {"stationId": "PELLARO", "lat": 38.01, "lon": 15.633, "openMeteo": true},
+  {"stationId": "SIBARI", "lat": 39.6833, "lon": 16.5333, "openMeteo": true},
+  {"stationId": "VILLAPIANA", "lat": 39.8167, "lon": 16.5167, "openMeteo": true},
+  {"stationId": "MELITO_DI_PORTO_SALVO", "lat": 37.9167, "lon": 15.7333, "openMeteo": true},
+  {"stationId": "SANTA_CATERINA_DELLO_IONIO", "lat": 38.55, "lon": 16.5667, "openMeteo": true},
+  {"stationId": "VILLA_SAN_GIOVANNI", "lat": 38.2131, "lon": 15.6414, "openMeteo": true},
+  {"stationId": "CAPO_VATICANO", "lat": 38.6278, "lon": 15.8415, "openMeteo": true},
+  {"stationId": "TARSIA", "lat": 39.58, "lon": 16.3167, "openMeteo": true},
+  {"stationId": "BOVALINO", "lat": 38.15, "lon": 16.2, "openMeteo": true},
+  {"stationId": "CAPOCOLONNA", "lat": 39.0167, "lon": 17.1333, "openMeteo": true},
+  {"stationId": "MONASTERACE_MARINA", "lat": 38.4333, "lon": 16.5333, "openMeteo": true},
+  {"stationId": "SAN_LUCA", "lat": 38.1333, "lon": 16.0833, "openMeteo": true},
+  {"stationId": "TREBISACCE", "lat": 39.85, "lon": 16.5333, "openMeteo": true},
+  {"stationId": "SANSOSTI", "lat": 39.6167, "lon": 16.05, "openMeteo": true},
+  {"stationId": "MONGRASSANO_SCALO", "lat": 39.538, "lon": 16.264, "openMeteo": true},
+  {"stationId": "MARINA_DI_STRONGOLI", "lat": 39.3, "lon": 17.1167, "openMeteo": true},
+  {"stationId": "CUTRO", "lat": 39.0167, "lon": 17.0833, "openMeteo": true},
+  {"stationId": "TORRETTA_DI_CRUCOLI", "lat": 39.4167, "lon": 17.0333, "openMeteo": true},
+  {"stationId": "ACERENTHIA_CAMIGLIANO", "lat": 39.2667, "lon": 17.0, "openMeteo": true},
+  {"stationId": "CASTROVILLARI", "lat": 39.8167, "lon": 16.2, "openMeteo": true},
+  {"stationId": "ACRI", "lat": 39.5, "lon": 16.3833, "openMeteo": true},
+  {"stationId": "ROCCAFORTE_DEL_GRECO", "lat": 38.0167, "lon": 15.85, "openMeteo": true},
+  {"stationId": "MONTALTO_UFFUGO", "lat": 39.4165, "lon": 16.1985, "openMeteo": true},
+  {"stationId": "ROSETO_CAPO_SPULICO", "lat": 39.9667, "lon": 16.5833, "openMeteo": true},
+  {"stationId": "VIBO_VALENTIA", "lat": 38.6749, "lon": 16.1027, "openMeteo": true},
+  {"stationId": "TORANO_SCALO", "lat": 39.516, "lon": 16.255, "openMeteo": true},
+  {"stationId": "ALTOMONTE", "lat": 39.7, "lon": 16.1333, "openMeteo": true},
+  {"stationId": "DALTOLIA", "lat": 39.033, "lon": 16.388, "openMeteo": true},
+  {"stationId": "MONTEROSSO_CALABRO", "lat": 38.6333, "lon": 16.2667, "openMeteo": true},
+  {"stationId": "ROGLIANO", "lat": 39.1581, "lon": 16.3723, "openMeteo": true},
+  {"stationId": "GIOIA_TAURO", "lat": 38.4236, "lon": 15.8996, "openMeteo": true},
+  {"stationId": "ROSARNO", "lat": 38.4886, "lon": 15.9738, "openMeteo": true},
+  {"stationId": "CAMILGIATELLO_SILANO", "lat": 39.3306, "lon": 16.4492, "openMeteo": true},
+  {"stationId": "MONTE_CURCIO", "lat": 39.317, "lon": 16.4689, "openMeteo": true},
+  {"stationId": "BOTTE_DONATO", "lat": 39.2833, "lon": 16.5667, "openMeteo": true},
+  {"stationId": "RENDE", "lat": 39.3306, "lon": 16.2078, "openMeteo": true},
+  {"stationId": "GIRIFALCO", "lat": 38.8, "lon": 16.4167, "openMeteo": true}
   { stationId: "SANGIOVANNI", lat: 39.261, lon: 16.694, openMeteo: true }
 ];
 
@@ -80,7 +119,7 @@ async function fetchEInserisci() {
   for (const s of stazioni) {
     if (s.apiKey) {
       try {
-        console.log(`Weather.com Ã¢ÂÂ ${s.stationId}`);
+        console.log(`Weather.com ÃÂ¢ÃÂÃÂ ${s.stationId}`);
         const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
         const raw = await wc.text();
         if (!raw.startsWith("{")) throw new Error("Risposta non valida da Weather.com");
@@ -94,7 +133,7 @@ async function fetchEInserisci() {
       }
     } else {
       try {
-        console.log(`OpenMeteo Ã¢ÂÂ ${s.stationId}`);
+        console.log(`OpenMeteo ÃÂ¢ÃÂÃÂ ${s.stationId}`);
         const om = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&timezone=auto`);
         const omData = await om.json();
         const o = omData.current;
@@ -115,4 +154,3 @@ setInterval(() => {
   console.log("Aggiornamento ogni 10 minuti:", new Date().toISOString());
   fetchEInserisci();
 }, 10 * 60 * 1000);
-
