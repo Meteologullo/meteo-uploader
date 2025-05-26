@@ -8,7 +8,7 @@ const db = getFirestore();
 
 const stazioni = [
   { stationId: "ICOSEN11", lat: 38.905, lon: 16.587, apiKey: "03d402e1e8844ac49402e1e8844ac419" },
-  { stationId: "IAMANT6", lat: 39.143, lon: 16.062, apiKey: "844d02e7e12049ef8d02e7e120b9ef68" },
+  { stationId: "IAMANT7", lat: 39.143, lon: 16.062, apiKey: "a3f4ae4f9b6d46a4b4ae4f9b6d06a494" },
   { stationId: "ICELIC3", lat: 38.873, lon: 16.683, apiKey: "2d12def7f4894eca92def7f4892eca99" },
   { stationId: "ICOSEN20", lat: 38.898, lon: 16.556, apiKey: "844d02e7e12049ef8d02e7e120b9ef68" },
   { stationId: "IMENDI13", lat: 38.85, lon: 16.464, apiKey: "844d02e7e12049ef8d02e7e120b9ef68" },
