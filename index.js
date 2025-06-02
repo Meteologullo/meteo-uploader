@@ -13,7 +13,7 @@ const stazioni = [
   { stationId: "ICOSEN20", lat: 38.898, lon: 16.556, apiKey: "844d02e7e12049ef8d02e7e120b9ef68" },
   { stationId: "IMENDI13", lat: 38.85, lon: 16.464, apiKey: "844d02e7e12049ef8d02e7e120b9ef68" },
   { stationId: "ICASAL40", lat: 38.993, lon: 16.62, apiKey: "b368cd08174d424fa8cd08174d424f20" },
-  { stationId: "IBIANC4", lat: 39.11, lon: 16., apiKey: "2ccb91c2398a4f778b91c2398a4f772f" }
+  { stationId: "IBIANC4", lat: 39.11, lon: 16.42, apiKey: "2ccb91c2398a4f778b91c2398a4f772f" },
   { stationId: "CATCENTRO", lat: 38.91, lon: 16.59, openMeteo: true },
   { stationId: "REGCENTRO", lat: 38.11, lon: 15.65, openMeteo: true },
   { stationId: "ROSSCENTRO", lat: 39.58, lon: 16.63, openMeteo: true },
