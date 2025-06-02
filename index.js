@@ -7,7 +7,6 @@ initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 const stazioni = [
-  { stationId: "IBIANC4", lat: 39.11, lon: 16.42, apiKey: "2ccb91c2398a4f778b91c2398a4f772f" }
   { stationId: "ICOSEN11", lat: 38.905, lon: 16.587, apiKey: "03d402e1e8844ac49402e1e8844ac419" },
   { stationId: "IAMANT7", lat: 39.143, lon: 16.062, apiKey: "a3f4ae4f9b6d46a4b4ae4f9b6d06a494" },
   { stationId: "ICELIC3", lat: 38.873, lon: 16.683, apiKey: "2d12def7f4894eca92def7f4892eca99" },
