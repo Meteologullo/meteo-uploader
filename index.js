@@ -292,6 +292,39 @@ const stazioni = [
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
+const OPEN_METEO_BATCH = 100; // numero massimo di stazioni per chiamata
+async function fetchOpenMeteoChunk(chunk) {
+  const lat = chunk.map(s => s.lat).join(",");
+  const lon = chunk.map(s => s.lon).join(",");
+  const url = `https://api.open-meteo.com/v1/forecast`
+            + `?latitude=${lat}&longitude=${lon}`
+            + `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation`
+            + `&timezone=auto`;
+  try {
+    const res = await fetch(url);
+    const raw = await res.text();
+    if (!raw.startsWith("{") && !raw.startsWith("[")) throw new Error("Risposta non valida da Open‑Meteo");
+    const data = JSON.parse(raw);
+
+    const results = Array.isArray(data) ? data : [data];
+    results.forEach((o, idx) => {
+      const s = chunk[idx];
+      const c = o.current || o;
+      if (c?.temperature_2m != null) {
+        salvaOsservazione(s.stationId, s.lat, s.lon,
+                          c.temperature_2m,
+                          c.relative_humidity_2m,
+                          c.precipitation,
+                          c.wind_speed_10m);
+      }
+    });
+  } catch (e) {
+    console.error("Errore Open‑Meteo batch:", e.message);
+  }
+}
+
+
+
 async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
     const dati = {
@@ -313,36 +346,35 @@ async function salvaOsservazione(stationId, latitudine, longitudine, temperatura
 }
 
 async function fetchEInserisci() {
-  for (const s of stazioni) {
-    if (s.apiKey) {
-      try {
-        console.log(`Weather.com ÃÂ¢ÃÂÃÂ ${s.stationId}`);
-        const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
-        const raw = await wc.text();
-        if (!raw.startsWith("{")) throw new Error("Risposta non valida da Weather.com");
-        const wcData = JSON.parse(raw);
-        const d = wcData.observations?.[0];
-        if (d?.metric?.temp != null) {
-          await salvaOsservazione(s.stationId, s.lat, s.lon, d.metric.temp, d.humidity, d.metric.precipTotal, d.windGust);
-        }
-      } catch (err) {
-        console.error(`Errore Weather.com ${s.stationId}:`, err.message);
+  // Weather.com – API key presente
+  for (const s of stazioni.filter(x => x.apiKey)) {
+    try {
+      console.log(`Weather.com → ${s.stationId}`);
+      const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
+      const raw = await wc.text();
+      if (!raw.startsWith("{")) throw new Error("Risposta non valida da Weather.com");
+      const wcData = JSON.parse(raw);
+      const d = wcData.observations?.[0];
+      if (d?.metric?.temp != null) {
+        await salvaOsservazione(s.stationId, s.lat, s.lon,
+                                d.metric.temp,
+                                d.humidity,
+                                d.metric.precipTotal,
+                                d.windGust);
       }
-    } else {
-      try {
-        console.log(`OpenMeteo ÃÂ¢ÃÂÃÂ ${s.stationId}`);
-        const om = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&timezone=auto`);
-        const omData = await om.json();
-        const o = omData.current;
-        if (o?.temperature_2m != null) {
-          await salvaOsservazione(s.stationId, s.lat, s.lon, o.temperature_2m, o.relative_humidity_2m, o.precipitation, o.wind_speed_10m);
-        }
-      } catch (err) {
-        console.error(`Errore OpenMeteo ${s.stationId}:`, err.message);
-      }
+    } catch (err) {
+      console.error(`Errore Weather.com ${s.stationId}:`, err.message);
     }
   }
+
+  // Open‑Meteo – in blocchi per ridurre le chiamate
+  const omStations = stazioni.filter(x => !x.apiKey);
+  for (let i = 0; i < omStations.length; i += OPEN_METEO_BATCH) {
+    const chunk = omStations.slice(i, i + OPEN_METEO_BATCH);
+    await fetchOpenMeteoChunk(chunk);
+  }
 }
+
 
 console.log("Script meteo attivo:", new Date().toISOString());
 fetchEInserisci();
