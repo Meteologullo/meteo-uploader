@@ -363,6 +363,7 @@ function chunkArray(arr, size) {
   return res;
 }
 
+
 async function fetchOpenMeteoBatch(batch) {
   const lats = batch.map(s => s.lat).join(',');
   const lons = batch.map(s => s.lon).join(',');
@@ -372,27 +373,34 @@ async function fetchOpenMeteoBatch(batch) {
               `&timezone=auto`;
 
   console.log(`Open‑Meteo → batch di ${batch.length} stazioni`);
-  const om = await fetch(url);
-  if (!om.ok) throw new Error(`Status ${om.status}`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  const data = await res.json();
 
-  const omData = await om.json();
+  // API può restituire un singolo oggetto o un array di oggetti,
+  // in base al numero di coordinate richieste
+  const records = Array.isArray(data) ? data : [data];
 
-  // Con singola località `current` è un oggetto; con multi‑località è un oggetto di array
-  const { current } = omData;
-  const isBatch = Array.isArray(current.temperature_2m);
+  for (let idx = 0; idx < records.length; idx++) {
+    const st = batch[idx];
+    const loc = records[idx];
 
-  for (let i = 0; i < batch.length; i++) {
-    const st = batch[i];
-    const t = isBatch ? current.temperature_2m[i] : current.temperature_2m;
-    if (t == null) continue; // salta eventuali mancanze
+    if (!loc || loc.error || !loc.current) {
+      console.warn(`Open‑Meteo: dati assenti per ${st.stationId}`, loc?.reason || '');
+      continue;
+    }
+
+    const cur = loc.current;
+    // Quando è un singolo record, i valori sono scalari.
+    // Con array di locations, i valori son sempre scalari per ogni loc.
     await salvaOsservazione(
       st.stationId,
       st.lat,
       st.lon,
-      t,
-      isBatch ? current.relative_humidity_2m[i] : current.relative_humidity_2m,
-      isBatch ? current.precipitation[i]        : current.precipitation,
-      isBatch ? current.wind_speed_10m[i]       : current.wind_speed_10m
+      cur.temperature_2m,
+      cur.relative_humidity_2m,
+      cur.precipitation,
+      cur.wind_speed_10m
     );
   }
 }
