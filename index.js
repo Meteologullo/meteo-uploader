@@ -1,19 +1,10 @@
-// meteo_batch.js
-// Versione 2025-06-14 – riduce il numero di chiamate a Open‑Meteo grazie al batching
-// Usare `node meteo_batch.js` (Node ≥18, modulo ES)
-
 import fetch from 'node-fetch';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-// Carica le credenziali da variabile d'ambiente come già in precedenza
 const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
-
-// ---------- CONFIGURAZIONE ----------
-const MAX_LOCATIONS_PER_CALL = 100;     // limite massimo per batch Open‑Meteo
-const PAUSE_BETWEEN_BATCHES_MS = 1_000; // piccola pausa per non saturare il rate‑limit
 
 const stazioni = [
   { stationId: "ICOSEN11", lat: 38.905, lon: 16.587, apiKey: "03d402e1e8844ac49402e1e8844ac419" },
@@ -103,211 +94,9 @@ const stazioni = [
   {"stationId": "RENDE", "lat": 39.3306, "lon": 16.2078, "openMeteo": true},
   {"stationId": "GIRIFALCO", "lat": 38.8, "lon": 16.4167, "openMeteo": true},
   { stationId: "SANGIOVANNI", lat: 39.261, lon: 16.694, openMeteo: true },
-
-  { stationId: "ACCONIA", lat: 38.836, lon: 16.265, openMeteo: true },
-  { stationId: "ACQUAFORMOSA", lat: 39.736, lon: 16.078, openMeteo: true },
-  { stationId: "AIELLO_CALABRO", lat: 39.117, lon: 16.167, openMeteo: true },
-  { stationId: "ALBIDONA", lat: 39.937, lon: 16.525, openMeteo: true },
-  { stationId: "ALESSANDRIA_DEL_CARRETTO", lat: 39.984, lon: 16.338, openMeteo: true },
-  { stationId: "ALTILIA", lat: 39.129, lon: 16.253, openMeteo: true },
-  { stationId: "AMENDOLEA", lat: 38.025, lon: 15.887, openMeteo: true },
-  { stationId: "ANTONIMINA", lat: 38.195, lon: 16.097, openMeteo: true },
-  { stationId: "APOLLINARA", lat: 39.7, lon: 16.41, openMeteo: true },
-  { stationId: "ARDORE", lat: 38.23, lon: 16.171, openMeteo: true },
-  { stationId: "ARENA", lat: 38.576, lon: 16.157, openMeteo: true },
-  { stationId: "BADOLATO", lat: 38.578, lon: 16.556, openMeteo: true },
-  { stationId: "BAGNARA_CALABRA", lat: 38.272, lon: 15.799, openMeteo: true },
-  { stationId: "BELCASTRO", lat: 39.027, lon: 16.687, openMeteo: true },
-  { stationId: "BELVEDERE_DI_SPINELLO", lat: 39.236, lon: 16.925, openMeteo: true },
-  { stationId: "BENESTARE", lat: 38.207, lon: 16.148, openMeteo: true },
-  { stationId: "BIANCO", lat: 38.082, lon: 16.142, openMeteo: true },
-  { stationId: "BOCCHIGLIERO", lat: 39.429, lon: 16.797, openMeteo: true },
-  { stationId: "BORGIA", lat: 38.882, lon: 16.507, openMeteo: true },
-  { stationId: "BOTRICELLO", lat: 38.932, lon: 16.858, openMeteo: true },
-  { stationId: "BOVA_MARINA", lat: 37.933, lon: 15.918, openMeteo: true },
-  { stationId: "BRIATICO", lat: 38.72, lon: 15.949, openMeteo: true },
-  { stationId: "BROGNATURO", lat: 38.575, lon: 16.373, openMeteo: true },
-  { stationId: "CACCURI", lat: 39.164, lon: 16.786, openMeteo: true },
-  { stationId: "CALOPEZZATI", lat: 39.516, lon: 16.869, openMeteo: true },
-  { stationId: "CAMIGLIANO", lat: 38.983, lon: 16.233, openMeteo: true },
-  { stationId: "CAMPANA", lat: 39.496, lon: 16.742, openMeteo: true },
-  { stationId: "CAMPO_SAN_LORENZO", lat: 39.36, lon: 16.49, openMeteo: true },
-  { stationId: "CANTINELLA", lat: 39.66, lon: 16.44, openMeteo: true },
-  { stationId: "CAPO_COLONNA", lat: 39.016, lon: 17.135, openMeteo: true },
-  { stationId: "CARAFFA", lat: 38.882, lon: 16.488, openMeteo: true },
-  { stationId: "CARDETO", lat: 38.045, lon: 15.745, openMeteo: true },
-  { stationId: "CARIA", lat: 38.638, lon: 15.958, openMeteo: true },
-  { stationId: "CAROLEI", lat: 39.25, lon: 16.217, openMeteo: true },
-  { stationId: "CASABONA", lat: 39.2, lon: 16.991, openMeteo: true },
-  { stationId: "CASSANO_IONIO", lat: 39.783, lon: 16.317, openMeteo: true },
-  { stationId: "CASTELSILANO", lat: 39.238, lon: 16.844, openMeteo: true },
-  { stationId: "CASTROREGIO", lat: 39.987, lon: 16.51, openMeteo: true },
-  { stationId: "CATANZARO_LIDO", lat: 38.83, lon: 16.628, openMeteo: true },
-  { stationId: "CERCHIARA_DI_CALABRIA", lat: 39.883, lon: 16.4, openMeteo: true },
-  { stationId: "CERENZIA", lat: 39.246, lon: 16.812, openMeteo: true },
-  { stationId: "CERVA", lat: 39.029, lon: 16.572, openMeteo: true },
-  { stationId: "CHIARAVALLE_C", lat: 38.681, lon: 16.412, openMeteo: true },
-  { stationId: "CICALA", lat: 39.02, lon: 16.416, openMeteo: true },
-  { stationId: "CIRELLA", lat: 39.703, lon: 15.823, openMeteo: true },
-  { stationId: "CIRICILLA", lat: 39.012, lon: 16.365, openMeteo: true },
-  { stationId: "CORIGLIANO_CALABRO", lat: 39.593, lon: 16.519, openMeteo: true },
-  { stationId: "CORIGLIANO_SCALO", lat: 39.618, lon: 16.509, openMeteo: true },
-  { stationId: "COTRONEI", lat: 39.16, lon: 16.773, openMeteo: true },
-  { stationId: "COZZO_CARBONARO", lat: 39.46, lon: 16.2, openMeteo: true },
-  { stationId: "CROPALATI", lat: 39.466, lon: 16.585, openMeteo: true },
-  { stationId: "CROPANI", lat: 38.967, lon: 16.783, openMeteo: true },
-  { stationId: "CROSIA", lat: 39.517, lon: 16.903, openMeteo: true },
-  { stationId: "CURINGA", lat: 38.828, lon: 16.313, openMeteo: true },
-  { stationId: "DIPIGNANO", lat: 39.238, lon: 16.253, openMeteo: true },
-  { stationId: "DORIA", lat: 39.73, lon: 16.35, openMeteo: true },
-  { stationId: "DULCINO", lat: 39.039, lon: 16.434, openMeteo: true },
-  { stationId: "FABRIZIO", lat: 39.635, lon: 16.575, openMeteo: true },
-  { stationId: "FALERNA", lat: 39.003, lon: 16.172, openMeteo: true },
-  { stationId: "FILADELFIA", lat: 38.818, lon: 16.247, openMeteo: true },
-  { stationId: "FIRMO", lat: 39.72, lon: 16.17, openMeteo: true },
-  { stationId: "FRANCAVILLA_ANGITOLA", lat: 38.783, lon: 16.267, openMeteo: true },
-  { stationId: "GALLICO_MARINA", lat: 38.17, lon: 15.65, openMeteo: true },
-  { stationId: "GAMBARIE", lat: 38.154, lon: 15.877, openMeteo: true },
-  { stationId: "GIZZERIA", lat: 38.937, lon: 16.148, openMeteo: true },
-  { stationId: "GUARDIA_PIEM", lat: 39.467, lon: 16, openMeteo: true },
-  { stationId: "INUST1", lat: 39.4, lon: 16.5, openMeteo: true },
-  { stationId: "LAGHI_DI_SIBARI", lat: 39.72, lon: 16.5, openMeteo: true },
-  { stationId: "LAGO", lat: 39.198, lon: 16.128, openMeteo: true },
-  { stationId: "LAINO_BORGO", lat: 39.95, lon: 15.97, openMeteo: true },
-  { stationId: "LAMEZIA_TERME", lat: 38.967, lon: 16.3, openMeteo: true },
-  { stationId: "LATTARICO", lat: 39.464, lon: 16.138, openMeteo: true },
-  { stationId: "LATTARICO_PIRETTO", lat: 39.467, lon: 16.133, openMeteo: true },
-  { stationId: "LE_CANNELLA", lat: 38.946, lon: 17.074, openMeteo: true },
-  { stationId: "LE_CASTELLA", lat: 38.906, lon: 17.01, openMeteo: true },
-  { stationId: "LOCRI", lat: 38.243, lon: 16.258, openMeteo: true },
-  { stationId: "LORICA", lat: 39.24, lon: 16.51, openMeteo: true },
-  { stationId: "LUZZI_CENTRO", lat: 39.447, lon: 16.28, openMeteo: true },
-  { stationId: "LUZZI_PETRINI", lat: 39.46, lon: 16.24, openMeteo: true },
-  { stationId: "MAIDA", lat: 38.859, lon: 16.363, openMeteo: true },
-  { stationId: "MAIERATO", lat: 38.697, lon: 16.111, openMeteo: true },
-  { stationId: "MANDATORICCIO", lat: 39.508, lon: 16.87, openMeteo: true },
-  { stationId: "MANGONE", lat: 39.206, lon: 16.333, openMeteo: true },
-  { stationId: "MARANO_MARCH", lat: 39.317, lon: 16.175, openMeteo: true },
-  { stationId: "MARCEDUSA", lat: 39.024, lon: 16.858, openMeteo: true },
-  { stationId: "MARINA_DI_CAULONIA", lat: 38.389, lon: 16.463, openMeteo: true },
-  { stationId: "MARINA_DI_GIOIOSA_IONICA", lat: 38.3, lon: 16.318, openMeteo: true },
-  { stationId: "MARINA_DI_SANTILARIO_DELLO_IONIO", lat: 38.174, lon: 16.239, openMeteo: true },
-  { stationId: "MELICUCCÀ", lat: 38.35, lon: 15.942, openMeteo: true },
-  { stationId: "MESORACA", lat: 39.096, lon: 16.789, openMeteo: true },
-  { stationId: "MIGLIERINA", lat: 39.001, lon: 16.444, openMeteo: true },
-  { stationId: "MILETO", lat: 38.606, lon: 16.067, openMeteo: true },
-  { stationId: "MIRTO", lat: 39.502, lon: 16.768, openMeteo: true },
-  { stationId: "MOLOCHIO", lat: 38.28, lon: 16.01, openMeteo: true },
-  { stationId: "MONASTERACE", lat: 38.474, lon: 16.58, openMeteo: true },
-  { stationId: "MONSORETO", lat: 38.521, lon: 16.163, openMeteo: true },
-  { stationId: "MONTEBELLO_IONICO", lat: 37.986, lon: 15.759, openMeteo: true },
-  { stationId: "MONTEGIORDANO", lat: 40.04, lon: 16.53, openMeteo: true },
-  { stationId: "MONTEPAONE", lat: 38.697, lon: 16.529, openMeteo: true },
-  { stationId: "MONTEPAONE_LIDO", lat: 38.729, lon: 16.542, openMeteo: true },
-  { stationId: "MONTEROSSO_CALABRO", lat: 38.718, lon: 16.292, openMeteo: true },
-  { stationId: "MOTTA_SAN_GIOVANNI", lat: 38.013, lon: 15.706, openMeteo: true },
-  { stationId: "MOTTICELLA", lat: 38.064, lon: 16.137, openMeteo: true },
-  { stationId: "NICOTERA", lat: 38.533, lon: 15.933, openMeteo: true },
-  { stationId: "NOCARA", lat: 40.09, lon: 16.48, openMeteo: true },
-  { stationId: "OLIVARA", lat: 38.77, lon: 16.21, openMeteo: true },
-  { stationId: "OPPIDO_MAMERTINA", lat: 38.351, lon: 15.986, openMeteo: true },
-  { stationId: "ORIOLO", lat: 40.05, lon: 16.434, openMeteo: true },
-  { stationId: "ORSOMARSO", lat: 39.799, lon: 15.908, openMeteo: true },
-  { stationId: "PALERMITI", lat: 38.71, lon: 16.422, openMeteo: true },
-  { stationId: "PALIZZI", lat: 37.939, lon: 15.991, openMeteo: true },
-  { stationId: "PALIZZI_MARINA", lat: 37.919, lon: 15.973, openMeteo: true },
-  { stationId: "PALUDI", lat: 39.496, lon: 16.671, openMeteo: true },
-  { stationId: "PANETTI", lat: 39.01, lon: 16.3, openMeteo: true },
-  { stationId: "PANETTIERI", lat: 39.079, lon: 16.423, openMeteo: true },
-  { stationId: "PAPANICE", lat: 39.118, lon: 16.981, openMeteo: true },
-  { stationId: "PAPASIDERO", lat: 39.87, lon: 15.9, openMeteo: true },
-  { stationId: "PARAVATI", lat: 38.6, lon: 16.084, openMeteo: true },
-  { stationId: "PETRIZZI", lat: 38.637, lon: 16.474, openMeteo: true },
-  { stationId: "PETRONÀ", lat: 39.118, lon: 16.632, openMeteo: true },
-  { stationId: "PIANOPOLI", lat: 38.957, lon: 16.319, openMeteo: true },
-  { stationId: "PIETRAPAOLA", lat: 39.486, lon: 16.893, openMeteo: true },
-  { stationId: "PIETRAPENNATA", lat: 38.187, lon: 15.956, openMeteo: true },
-  { stationId: "PINO_GRANDE", lat: 39.32, lon: 16.75, openMeteo: true },
-  { stationId: "PLATACI", lat: 39.9, lon: 16.43, openMeteo: true },
-  { stationId: "PLATÌ", lat: 38.19, lon: 16.094, openMeteo: true },
-  { stationId: "POTAME", lat: 39.188, lon: 16.199, openMeteo: true },
-  { stationId: "PRAIA_A_MARE", lat: 39.909, lon: 15.778, openMeteo: true },
-  { stationId: "RENDE_QUATTR", lat: 39.354, lon: 16.242, openMeteo: true },
-  { stationId: "RIACE_MARINA", lat: 38.483, lon: 16.566, openMeteo: true },
-  { stationId: "ROCCA_IMPERIALE", lat: 40.1, lon: 16.58, openMeteo: true },
-  { stationId: "ROCCELLA_IONICA", lat: 38.327, lon: 16.398, openMeteo: true },
-  { stationId: "ROCCELLETTA", lat: 38.781, lon: 16.519, openMeteo: true },
-  { stationId: "ROGGIANO", lat: 39.618, lon: 16.162, openMeteo: true },
-  { stationId: "ROSE", lat: 39.394, lon: 16.232, openMeteo: true },
-  { stationId: "ROTA_GRECA", lat: 39.467, lon: 16.117, openMeteo: true },
-  { stationId: "SAMBATELLO", lat: 38.179, lon: 15.69, openMeteo: true },
-  { stationId: "SANPIETRO_GUARANO", lat: 39.333, lon: 16.317, openMeteo: true },
-  { stationId: "SANPIETRO_LAM", lat: 38.869, lon: 16.278, openMeteo: true },
-  { stationId: "SANTAGATA_DEL_BIANCO", lat: 38.092, lon: 16.176, openMeteo: true },
-  { stationId: "SANTALESSIO_IN_ASPROMONTE", lat: 38.148, lon: 15.709, openMeteo: true },
-  { stationId: "SANTANGELO_DI_GEROCARNE", lat: 38.639, lon: 16.123, openMeteo: true },
-  { stationId: "SANTA_CRISTINA_DASPROMONTE", lat: 38.275, lon: 15.954, openMeteo: true },
-  { stationId: "SANTEUFEMIA_DASPROMONTE", lat: 38.287, lon: 15.887, openMeteo: true },
-  { stationId: "SANTO_STEFANO_IN_ASPROMONTE", lat: 38.155, lon: 15.799, openMeteo: true },
-  { stationId: "SANVITO_IONIO", lat: 38.71, lon: 16.41, openMeteo: true },
-  { stationId: "SAN_CALOGERO", lat: 38.53, lon: 16.033, openMeteo: true },
-  { stationId: "SAN_DEMETRIO_CORONE", lat: 39.562, lon: 16.51, openMeteo: true },
-  { stationId: "SAN_FERDINANDO", lat: 38.483, lon: 15.899, openMeteo: true },
-  { stationId: "SAN_FLORO", lat: 38.899, lon: 16.486, openMeteo: true },
-  { stationId: "SAN_GIACOMO_DACRI", lat: 39.485, lon: 16.357, openMeteo: true },
-  { stationId: "SAN_GIORGIO_ALBANESE", lat: 39.58, lon: 16.45, openMeteo: true },
-  { stationId: "SAN_GIOVANNI_DI_GERACE", lat: 38.286, lon: 16.226, openMeteo: true },
-  { stationId: "SAN_GREGORIO", lat: 38.048, lon: 15.682, openMeteo: true },
-  { stationId: "SAN_LORENZO_BELLIZZI", lat: 39.88, lon: 16.33, openMeteo: true },
-  { stationId: "SAN_LUCIDO", lat: 39.31, lon: 16.052, openMeteo: true },
-  { stationId: "SAN_MANGO_DAQUINO", lat: 39.027, lon: 16.217, openMeteo: true },
-  { stationId: "SAN_MAURO_MARCHESATO", lat: 39.126, lon: 16.859, openMeteo: true },
-  { stationId: "SAN_NICOLA_DA_CRISSA", lat: 38.635, lon: 16.205, openMeteo: true },
-  { stationId: "SAN_NICOLA_DELLALTO", lat: 39.221, lon: 17.071, openMeteo: true },
-  { stationId: "SAN_PIETRO_APOSTOLO", lat: 39.007, lon: 16.47, openMeteo: true },
-  { stationId: "SAN_SOSTENE", lat: 38.65, lon: 16.487, openMeteo: true },
-  { stationId: "SAN_VINCENZO_LA_COSTA", lat: 39.374, lon: 16.162, openMeteo: true },
-  { stationId: "SARACENA", lat: 39.849, lon: 16.11, openMeteo: true },
-  { stationId: "SAVELLI", lat: 39.3, lon: 16.762, openMeteo: true },
-  { stationId: "SCHIAVONEA", lat: 39.663, lon: 16.523, openMeteo: true },
-  { stationId: "SELLIA", lat: 38.832, lon: 16.517, openMeteo: true },
-  { stationId: "SERRA_SAN_BRUNO", lat: 38.583, lon: 16.316, openMeteo: true },
-  { stationId: "SETTINGIANO", lat: 38.91, lon: 16.515, openMeteo: true },
-  { stationId: "SIBARI", lat: 39.74, lon: 16.45, openMeteo: true },
-  { stationId: "SIDERNO", lat: 38.27, lon: 16.294, openMeteo: true },
-  { stationId: "SIMERI", lat: 38.971, lon: 16.677, openMeteo: true },
-  { stationId: "SIMERI_MARE", lat: 38.866, lon: 16.698, openMeteo: true },
-  { stationId: "SORBO_BASILE", lat: 39.019, lon: 16.569, openMeteo: true },
-  { stationId: "SOVERIA_SIMERI", lat: 38.97, lon: 16.659, openMeteo: true },
-  { stationId: "SQUILLACE", lat: 38.781, lon: 16.513, openMeteo: true },
-  { stationId: "STECCATO_CUTRO", lat: 38.938, lon: 16.917, openMeteo: true },
-  { stationId: "TARSIA", lat: 39.623, lon: 16.273, openMeteo: true },
-  { stationId: "TAURIANOVA", lat: 38.354, lon: 16.03, openMeteo: true },
-  { stationId: "TAVERNA_DI_MONTALTO_UFFUGO", lat: 39.415, lon: 16.246, openMeteo: true },
-  { stationId: "TERRANOVA_DI_POLLINO", lat: 40.032, lon: 16.23, openMeteo: true },
-  { stationId: "TERRANOVA_SIBARI", lat: 39.657, lon: 16.34, openMeteo: true },
-  { stationId: "TIRIOLO", lat: 38.962, lon: 16.512, openMeteo: true },
-  { stationId: "TORRE_DI_RUGGIERO", lat: 38.648, lon: 16.353, openMeteo: true },
-  { stationId: "TRUNCA", lat: 38.155, lon: 15.642, openMeteo: true },
-  { stationId: "VALLEFIORITA", lat: 38.778, lon: 16.49, openMeteo: true },
-  { stationId: "VENA_DI_MAIDA", lat: 38.889, lon: 16.407, openMeteo: true },
-  { stationId: "VERBICARO", lat: 39.756, lon: 15.916, openMeteo: true },
-  { stationId: "VERZINO", lat: 39.326, lon: 16.911, openMeteo: true },
-  { stationId: "VIBO_MARINA", lat: 38.721, lon: 16.127, openMeteo: true },
-  { stationId: "VIGNE", lat: 39.357, lon: 16.869, openMeteo: true },
-  { stationId: "VILLAGGIO_MANCUSO", lat: 39.022, lon: 16.608, openMeteo: true },
-  { stationId: "VILLAGGIO_PALUMBO", lat: 39.215, lon: 16.762, openMeteo: true },
-  { stationId: "VILLAGGIO_TREPITÒ", lat: 38.386, lon: 16.453, openMeteo: true },
-  { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
-// ---------------- UTILITY ----------------
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-async function salvaOsservazione(stationId, latitudine, longitudine, temperatura,
-                                 umidita, pioggia, raffica) {
+async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
     const dati = {
       stationId,
@@ -320,123 +109,49 @@ async function salvaOsservazione(stationId, latitudine, longitudine, temperatura
       timestamp: Timestamp.now()
     };
     Object.keys(dati).forEach(k => dati[k] === undefined && delete dati[k]);
-    await db.collection('osservazioni').add(dati);
+    await db.collection("osservazioni").add(dati);
     console.log(`Salvato per ${stationId}`);
   } catch (e) {
     console.error(`Errore salvataggio ${stationId}:`, e.message);
   }
 }
 
-// -------------- WEATHER.COM --------------
-async function fetchWeatherCom(station) {
-  if (!station.apiKey) return;
-  try {
-    console.log(`Weather.com → ${station.stationId}`);
-    const wc = await fetch(
-      `https://api.weather.com/v2/pws/observations/current?stationId=${station.stationId}` +
-      `&format=json&units=m&apiKey=${station.apiKey}`
-    );
-    const raw = await wc.text();
-    if (!raw.startsWith('{')) throw new Error('Risposta non valida da Weather.com');
-    const { observations } = JSON.parse(raw);
-    const d = observations?.[0];
-    if (d?.metric?.temp != null) {
-      await salvaOsservazione(
-        station.stationId,
-        station.lat,
-        station.lon,
-        d.metric.temp,
-        d.humidity,
-        d.metric.precipTotal,
-        d.windGust
-      );
-    }
-  } catch (err) {
-    console.error(`Errore Weather.com ${station.stationId}:`, err.message);
-  }
-}
-
-// -------------- OPEN‑METEO  (Batch) --------------
-function chunkArray(arr, size) {
-  const res = [];
-  for (let i = 0; i < arr.length; i += size) res.push(arr.slice(i, i + size));
-  return res;
-}
-
-
-async function fetchOpenMeteoBatch(batch) {
-  const lats = batch.map(s => s.lat).join(',');
-  const lons = batch.map(s => s.lon).join(',');
-  const url = `https://api.open-meteo.com/v1/forecast` +
-              `?latitude=${lats}&longitude=${lons}` +
-              `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation` +
-              `&timezone=auto`;
-
-  console.log(`Open‑Meteo → batch di ${batch.length} stazioni`);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-  const data = await res.json();
-
-  // API può restituire un singolo oggetto o un array di oggetti,
-  // in base al numero di coordinate richieste
-  const records = Array.isArray(data) ? data : [data];
-
-  for (let idx = 0; idx < records.length; idx++) {
-    const st = batch[idx];
-    const loc = records[idx];
-
-    if (!loc || loc.error || !loc.current) {
-      console.warn(`Open‑Meteo: dati assenti per ${st.stationId}`, loc?.reason || '');
-      continue;
-    }
-
-    const cur = loc.current;
-    // Quando è un singolo record, i valori sono scalari.
-    // Con array di locations, i valori son sempre scalari per ogni loc.
-    await salvaOsservazione(
-      st.stationId,
-      st.lat,
-      st.lon,
-      cur.temperature_2m,
-      cur.relative_humidity_2m,
-      cur.precipitation,
-      cur.wind_speed_10m
-    );
-  }
-}
-
 async function fetchEInserisci() {
-  // 1. Weather.com
-  for (const s of stazioni.filter(s => s.apiKey)) {
-    await fetchWeatherCom(s);
-  }
-
-  // 2. Open‑Meteo
-  const openMeteoStations = stazioni.filter(s => s.openMeteo);
-  const batches = chunkArray(openMeteoStations, MAX_LOCATIONS_PER_CALL);
-
-  for (const batch of batches) {
-    try {
-      await fetchOpenMeteoBatch(batch);
-    } catch (err) {
-      console.error('Errore Open‑Meteo batch:', err.message);
-      // Riprova a metà batch se fallisce
-      if (batch.length > 1) {
-        const half = Math.ceil(batch.length / 2);
-        await fetchOpenMeteoBatch(batch.slice(0, half));
-        await fetchOpenMeteoBatch(batch.slice(half));
+  for (const s of stazioni) {
+    if (s.apiKey) {
+      try {
+        console.log(`Weather.com ÃÂ¢ÃÂÃÂ ${s.stationId}`);
+        const wc = await fetch(`https://api.weather.com/v2/pws/observations/current?stationId=${s.stationId}&format=json&units=m&apiKey=${s.apiKey}`);
+        const raw = await wc.text();
+        if (!raw.startsWith("{")) throw new Error("Risposta non valida da Weather.com");
+        const wcData = JSON.parse(raw);
+        const d = wcData.observations?.[0];
+        if (d?.metric?.temp != null) {
+          await salvaOsservazione(s.stationId, s.lat, s.lon, d.metric.temp, d.humidity, d.metric.precipTotal, d.windGust);
+        }
+      } catch (err) {
+        console.error(`Errore Weather.com ${s.stationId}:`, err.message);
+      }
+    } else {
+      try {
+        console.log(`OpenMeteo ÃÂ¢ÃÂÃÂ ${s.stationId}`);
+        const om = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${s.lat}&longitude=${s.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&timezone=auto`);
+        const omData = await om.json();
+        const o = omData.current;
+        if (o?.temperature_2m != null) {
+          await salvaOsservazione(s.stationId, s.lat, s.lon, o.temperature_2m, o.relative_humidity_2m, o.precipitation, o.wind_speed_10m);
+        }
+      } catch (err) {
+        console.error(`Errore OpenMeteo ${s.stationId}:`, err.message);
       }
     }
-    await sleep(PAUSE_BETWEEN_BATCHES_MS);
   }
 }
 
-// ---------- PROGRAMMA PRINCIPALE ----------
-console.log('Script meteo attivo:', new Date().toISOString());
-await fetchEInserisci();
+console.log("Script meteo attivo:", new Date().toISOString());
+fetchEInserisci();
 
-// Aggiorna ogni 10 minuti
-setInterval(async () => {
-  console.log('Aggiornamento ogni 10 minuti:', new Date().toISOString());
-  await fetchEInserisci();
+setInterval(() => {
+  console.log("Aggiornamento ogni 10 minuti:", new Date().toISOString());
+  fetchEInserisci();
 }, 10 * 60 * 1000);
