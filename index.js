@@ -307,7 +307,7 @@ const stazioni = [
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
-function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
+async function salvaOsservazione(stationId, latitudine, longitudine, temperatura, umidita, pioggia, raffica) {
   try {
     const dati = {
       stationId,
