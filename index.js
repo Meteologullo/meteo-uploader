@@ -457,3 +457,4 @@ async function ciclo() {
 
 // Avvio per Cron Job Railway (1 run singolo)
 await ciclo();
+
