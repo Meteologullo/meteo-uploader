@@ -326,7 +326,7 @@ async function salvaOsservazione(id, lat, lon, temp) {
 // ---------- WEATHER.COM ----------
 async function fetchWeatherCom(st) {
   try {
-    const url = `https://api.weather.com/v2/pws/observations/current?stationId=${st.stationId}&format=json&units=m&apiKey=${st.apiKey}`;
+    const url = 'https://api.weather.com/v2/pws/observations/current' + '?stationId=' + st.stationId + '&format=json&units=m&apiKey=' + st.apiKey;
     const r = await fetch(url);
     const raw = await r.text();
     if (!raw.startsWith('{')) throw new Error('Risposta non valida');
@@ -355,7 +355,7 @@ async function fetchOpenMeteoGroup() {
 
   const lats = batch.map(s=>s.lat).join(',');
   const lons = batch.map(s=>s.lon).join(',');
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=${OPENMETEO_PARAMS}&timezone=auto`;
+  const url = 'https://api.open-meteo.com/v1/forecast' + '?latitude=' + lats + '&longitude=' + lons + '&current=' + OPENMETEO_PARAMS + '&timezone=auto';
 
   try {
     const r = await fetch(url);
