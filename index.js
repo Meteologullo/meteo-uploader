@@ -298,7 +298,6 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // -------------------- IMPORT --------------------
 import { db, Timestamp } from './firebase.js'; // Assumendo che usi Firebase setup
-import { fetchWeatherComAll, salvaOsservazione, omGroups, OPENMETEO_PARAMS, WEATHERCOM_INTERVAL_MIN } from './configurazione.js';
 import fetch from 'node-fetch';
 
 // -------------------- STATO FIRESTORE --------------------
