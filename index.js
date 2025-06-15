@@ -15,7 +15,7 @@ const db = getFirestore();
 const WEATHERCOM_INTERVAL_MIN = 10;
 const OPENMETEO_MIN = 30;   // intervallo minimo (min)
 const OPENMETEO_MAX = 40;   // intervallo massimo (min)
-const BATCH_SIZE = 100;     // max coordinate per request
+const BATCH_SIZE = 150;     // max coordinate per request
 const OPENMETEO_PARAMS = 'temperature_2m';
 
 // ---------- STAZIONI ----------
