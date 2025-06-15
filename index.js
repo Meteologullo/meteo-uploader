@@ -389,4 +389,91 @@ async function ciclo() {
 }
 
 await ciclo();
-setInterval(ciclo, WEATHERCOM_INTERVAL_MIN*60_000);
+
+// ---------- PERSISTENZA STATO OPEN-METEO SU FIRESTORE ----------
+async function getStato() {
+  try {
+    const doc = await db.collection('_runtime').doc('openMeteoState').get();
+    return doc.exists ? doc.data() : { groupIdx: 0, retryUntil: {} };
+  } catch (e) {
+    console.error("Errore lettura stato:", e.message);
+    return { groupIdx: 0, retryUntil: {} };
+  }
+}
+
+async function setStato(groupIdx, retryUntil) {
+  try {
+    await db.collection('_runtime').doc('openMeteoState').set({
+      groupIdx,
+      retryUntil,
+      updatedAt: Timestamp.now()
+    });
+  } catch (e) {
+    console.error("Errore salvataggio stato:", e.message);
+  }
+}
+
+// ---------- FETCH OPEN‑METEO CON GESTIONE 429 ----------
+async function fetchOpenMeteoGroup(groupIdx) {
+  if (omGroups.length === 0) return null;
+  const batch = omGroups[groupIdx];
+  const lats = batch.map(s => s.lat).join(',');
+  const lons = batch.map(s => s.lon).join(',');
+  const url = 'https://api.open-meteo.com/v1/forecast' +
+              '?latitude=' + lats +
+              '&longitude=' + lons +
+              '&current=' + OPENMETEO_PARAMS +
+              '&timezone=auto';
+
+  try {
+    const r = await fetch(url);
+
+    if (r.status === 429) {
+      const waitMs = 30 * 60 * 1000; // 30 minuti
+      console.warn(`429 – gruppo ${groupIdx} in pausa`);
+      return Date.now() + waitMs;
+    }
+
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+    const data = await r.json();
+    const recs = Array.isArray(data) ? data : [data];
+    for (let i = 0; i < recs.length; i++) {
+      const cur = recs[i]?.current;
+      if (!cur) continue;
+      const st = batch[i];
+      await salvaOsservazione(st.stationId, st.lat, st.lon, cur.temperature_2m);
+    }
+
+    console.log(`✓ Open-Meteo gruppo ${groupIdx} completato`);
+    return null;
+
+  } catch (err) {
+    console.error(`Open‑Meteo gruppo ${groupIdx} errore:`, err.message);
+    return null;
+  }
+}
+
+// ---------- SCHEDULER PERSISTENTE PER CRON JOB ----------
+async function ciclo() {
+  console.log('--- ciclo', new Date().toISOString());
+  await fetchWeatherComAll();
+
+  const stato = await getStato();
+  const groupIdx = stato.groupIdx || 0;
+  const retryUntil = stato.retryUntil || {};
+  const now = Date.now();
+
+  if (!retryUntil[groupIdx] || now >= retryUntil[groupIdx]) {
+    const retry = await fetchOpenMeteoGroup(groupIdx);
+    if (retry) retryUntil[groupIdx] = retry;
+  } else {
+    console.log(`⏳ gruppo ${groupIdx} in pausa fino a ${new Date(retryUntil[groupIdx]).toISOString()}`);
+  }
+
+  const nextIdx = (groupIdx + 1) % omGroups.length;
+  await setStato(nextIdx, retryUntil);
+}
+
+// Avvio per Cron Job Railway (1 run singolo)
+await ciclo();
