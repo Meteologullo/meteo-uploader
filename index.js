@@ -1,21 +1,3 @@
-// index_snellente.js – versione ottimizzata (15 giu 2025)
-// • Weather.com / PWS → ogni 10 min
-// • Open‑Meteo (solo temperatura) → un gruppo ≤100 stazioni ogni 30‑40 min
-//   → ~4 100 “unit” al giorno, molto sotto il limite 10k.
-
-import fetch from 'node-fetch';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-
-const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-initializeApp({ credential: cert(serviceAccount) });
-const db = getFirestore();
-
-// ---------- CONFIG ----------
-const WEATHERCOM_INTERVAL_MIN = 10;
-const OPENMETEO_MIN = 30;   // intervallo minimo (min)
-const OPENMETEO_MAX = 40;   // intervallo massimo (min)
-const BATCH_SIZE = 150;     // max coordinate per request
 const OPENMETEO_PARAMS = 'temperature_2m';
 
 // ---------- STAZIONI ----------
@@ -196,7 +178,7 @@ const stazioni = [
   { stationId: "MARINA_DI_CAULONIA", lat: 38.389, lon: 16.463, openMeteo: true },
   { stationId: "MARINA_DI_GIOIOSA_IONICA", lat: 38.3, lon: 16.318, openMeteo: true },
   { stationId: "MARINA_DI_SANTILARIO_DELLO_IONIO", lat: 38.174, lon: 16.239, openMeteo: true },
-  { stationId: "MELICUCCÀ", lat: 38.35, lon: 15.942, openMeteo: true },
+  { stationId: "MELICUCCÃ", lat: 38.35, lon: 15.942, openMeteo: true },
   { stationId: "MESORACA", lat: 39.096, lon: 16.789, openMeteo: true },
   { stationId: "MIGLIERINA", lat: 39.001, lon: 16.444, openMeteo: true },
   { stationId: "MILETO", lat: 38.606, lon: 16.067, openMeteo: true },
@@ -227,13 +209,13 @@ const stazioni = [
   { stationId: "PAPASIDERO", lat: 39.87, lon: 15.9, openMeteo: true },
   { stationId: "PARAVATI", lat: 38.6, lon: 16.084, openMeteo: true },
   { stationId: "PETRIZZI", lat: 38.637, lon: 16.474, openMeteo: true },
-  { stationId: "PETRONÀ", lat: 39.118, lon: 16.632, openMeteo: true },
+  { stationId: "PETRONÃ", lat: 39.118, lon: 16.632, openMeteo: true },
   { stationId: "PIANOPOLI", lat: 38.957, lon: 16.319, openMeteo: true },
   { stationId: "PIETRAPAOLA", lat: 39.486, lon: 16.893, openMeteo: true },
   { stationId: "PIETRAPENNATA", lat: 38.187, lon: 15.956, openMeteo: true },
   { stationId: "PINO_GRANDE", lat: 39.32, lon: 16.75, openMeteo: true },
   { stationId: "PLATACI", lat: 39.9, lon: 16.43, openMeteo: true },
-  { stationId: "PLATÌ", lat: 38.19, lon: 16.094, openMeteo: true },
+  { stationId: "PLATÃ", lat: 38.19, lon: 16.094, openMeteo: true },
   { stationId: "POTAME", lat: 39.188, lon: 16.199, openMeteo: true },
   { stationId: "PRAIA_A_MARE", lat: 39.909, lon: 15.778, openMeteo: true },
   { stationId: "RENDE_QUATTR", lat: 39.354, lon: 16.242, openMeteo: true },
@@ -301,82 +283,31 @@ const stazioni = [
   { stationId: "VIGNE", lat: 39.357, lon: 16.869, openMeteo: true },
   { stationId: "VILLAGGIO_MANCUSO", lat: 39.022, lon: 16.608, openMeteo: true },
   { stationId: "VILLAGGIO_PALUMBO", lat: 39.215, lon: 16.762, openMeteo: true },
-  { stationId: "VILLAGGIO_TREPITÒ", lat: 38.386, lon: 16.453, openMeteo: true },
+  { stationId: "VILLAGGIO_TREPITÃ", lat: 38.386, lon: 16.453, openMeteo: true },
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
 // ---------- UTIL ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function salvaOsservazione(id, lat, lon, temp) {
-  try {
-    await db.collection('osservazioni').add({
-      stationId: id,
-      latitudine: lat,
-      longitudine: lon,
-      temperatura: temp,
-      timestamp: Timestamp.now()
-    });
-    console.log('Salvato per', id);
-  } catch (e) {
-    console.error('Errore salvataggio', id, e.message);
-  }
-}
-
-// ---------- WEATHER.COM ----------
-async function fetchWeatherCom(st) {
-  try {
-    const url = 'https://api.weather.com/v2/pws/observations/current' + '?stationId=' + st.stationId + '&format=json&units=m&apiKey=' + st.apiKey;
-    const r = await fetch(url);
-    const raw = await r.text();
-    if (!raw.startsWith('{')) throw new Error('Risposta non valida');
-    const d = JSON.parse(raw).observations?.[0];
-    if (!d?.metric?.temp) return;
-    await salvaOsservazione(st.stationId, st.lat, st.lon, d.metric.temp);
-  } catch (err) {
-    console.error('Weather.com', st.stationId, err.message);
-  }
-}
-async function fetchWeatherComAll() {
-  for (const st of stazioni.filter(s => s.apiKey)) {
-    await fetchWeatherCom(st);
-  }
-}
-
-// ---------- OPEN‑METEO ----------
-function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
-const omGroups = chunk(stazioni.filter(s => s.openMeteo), BATCH_SIZE);
 
 
-  } catch (err) {
-    console.error('Open‑Meteo batch', err.message);
-  }
-}
 
-// ---------- SCHEDULER ----------
 
-async function ciclo() {
-  console.log('--- ciclo', new Date().toISOString());
-  await fetchWeatherComAll();
+// ---- CODICE FUNZIONALE RICOSTRUITO ----
 
-  {
-  const now = new Date();
-  const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-  const groupIdx = Math.floor(minutes / 30) % omGroups.length;
-  await fetchOpenMeteoGroup(groupIdx);
-  console.log('Open‑Meteo: fetch gruppo', groupIdx);
-}
-}
+// -------------------- IMPORT --------------------
+import { db, Timestamp } from './firebase.js'; // Assumendo che usi Firebase setup
+import { fetchWeatherComAll, salvaOsservazione, omGroups, OPENMETEO_PARAMS, WEATHERCOM_INTERVAL_MIN } from './configurazione.js';
+import fetch from 'node-fetch';
 
-await ciclo();
-
-// ---------- PERSISTENZA STATO OPEN-METEO SU FIRESTORE ----------
+// -------------------- STATO FIRESTORE --------------------
 async function getStato() {
   try {
     const doc = await db.collection('_runtime').doc('openMeteoState').get();
     return doc.exists ? doc.data() : { groupIdx: 0, retryUntil: {} };
   } catch (e) {
-    console.error("Errore lettura stato:", e.message);
+    console.error("ð¥ Errore lettura stato:", e.message);
     return { groupIdx: 0, retryUntil: {} };
   }
 }
@@ -389,11 +320,11 @@ async function setStato(groupIdx, retryUntil) {
       updatedAt: Timestamp.now()
     });
   } catch (e) {
-    console.error("Errore salvataggio stato:", e.message);
+    console.error("ð¥ Errore salvataggio stato:", e.message);
   }
 }
 
-// ---------- FETCH OPEN‑METEO CON GESTIONE 429 ----------
+// -------------------- FETCH OPEN-METEO --------------------
 async function fetchOpenMeteoGroup(groupIdx) {
   if (omGroups.length === 0) return null;
   const batch = omGroups[groupIdx];
@@ -409,8 +340,8 @@ async function fetchOpenMeteoGroup(groupIdx) {
     const r = await fetch(url);
 
     if (r.status === 429) {
-      const waitMs = 30 * 60 * 1000; // 30 minuti
-      console.warn(`429 – gruppo ${groupIdx} in pausa`);
+      const waitMs = 30 * 60 * 1000;
+      console.warn(`â³ 429 â gruppo ${groupIdx} in pausa`);
       return Date.now() + waitMs;
     }
 
@@ -425,18 +356,18 @@ async function fetchOpenMeteoGroup(groupIdx) {
       await salvaOsservazione(st.stationId, st.lat, st.lon, cur.temperature_2m);
     }
 
-    console.log(`✓ Open-Meteo gruppo ${groupIdx} completato`);
+    console.log(`â Open-Meteo gruppo ${groupIdx} completato`);
     return null;
 
   } catch (err) {
-    console.error(`Open‑Meteo gruppo ${groupIdx} errore:`, err.message);
+    console.error(`ð¥ OpenâMeteo gruppo ${groupIdx} errore:`, err.message);
     return null;
   }
 }
 
-// ---------- SCHEDULER PERSISTENTE PER CRON JOB ----------
+// -------------------- CICLO --------------------
 async function ciclo() {
-  console.log('--- ciclo', new Date().toISOString());
+  console.log('ð Inizio ciclo', new Date().toISOString());
   await fetchWeatherComAll();
 
   const stato = await getStato();
@@ -448,12 +379,12 @@ async function ciclo() {
     const retry = await fetchOpenMeteoGroup(groupIdx);
     if (retry) retryUntil[groupIdx] = retry;
   } else {
-    console.log(`⏳ gruppo ${groupIdx} in pausa fino a ${new Date(retryUntil[groupIdx]).toISOString()}`);
+    console.log(`â­ï¸  gruppo ${groupIdx} in pausa fino a ${new Date(retryUntil[groupIdx]).toISOString()}`);
   }
 
   const nextIdx = (groupIdx + 1) % omGroups.length;
   await setStato(nextIdx, retryUntil);
 }
 
-// Avvio per Cron Job Railway (1 run singolo)
+// -------------------- ESECUZIONE PER CRON --------------------
 await ciclo();
