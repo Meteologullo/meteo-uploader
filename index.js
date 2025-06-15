@@ -348,26 +348,6 @@ function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out
 const omGroups = chunk(stazioni.filter(s => s.openMeteo), BATCH_SIZE);
 
 
-async function fetchOpenMeteoGroup(groupIdx) {
-  if (omGroups.length === 0) return;
-  const batch = omGroups[groupIdx];
-  groupIdx = (groupIdx + 1) % omGroups.length;
-
-  const lats = batch.map(s=>s.lat).join(',');
-  const lons = batch.map(s=>s.lon).join(',');
-  const url = 'https://api.open-meteo.com/v1/forecast' + '?latitude=' + lats + '&longitude=' + lons + '&current=' + OPENMETEO_PARAMS + '&timezone=auto';
-
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    const recs = Array.isArray(data) ? data : [data];
-    for (let i=0;i<recs.length;i++) {
-      const cur = recs[i]?.current;
-      if (!cur) continue;
-      const st = batch[i];
-      await salvaOsservazione(st.stationId, st.lat, st.lon, cur.temperature_2m);
-    }
   } catch (err) {
     console.error('Open‑Meteo batch', err.message);
   }
