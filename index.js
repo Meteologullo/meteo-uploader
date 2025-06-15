@@ -346,9 +346,9 @@ async function fetchWeatherComAll() {
 // ---------- OPEN‑METEO ----------
 function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
 const omGroups = chunk(stazioni.filter(s => s.openMeteo), BATCH_SIZE);
-let groupIdx = 0;
 
-async function fetchOpenMeteoGroup() {
+
+async function fetchOpenMeteoGroup(groupIdx) {
   if (omGroups.length === 0) return;
   const batch = omGroups[groupIdx];
   groupIdx = (groupIdx + 1) % omGroups.length;
@@ -374,16 +374,18 @@ async function fetchOpenMeteoGroup() {
 }
 
 // ---------- SCHEDULER ----------
-let openMeteoStep = 0;
+
 async function ciclo() {
   console.log('--- ciclo', new Date().toISOString());
   await fetchWeatherComAll();
 
-  openMeteoStep = (openMeteoStep + 1) % 3;
-  if (openMeteoStep === 0) {
-    await fetchOpenMeteoGroup();
-    console.log('Open‑Meteo: fetch effettuato (ogni 3 cicli)');
-  }
+  {
+  const now = new Date();
+  const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const groupIdx = Math.floor(minutes / 30) % omGroups.length;
+  await fetchOpenMeteoGroup(groupIdx);
+  console.log('Open‑Meteo: fetch gruppo', groupIdx);
+}
 }
 
 await ciclo();
