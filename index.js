@@ -374,16 +374,15 @@ async function fetchOpenMeteoGroup() {
 }
 
 // ---------- SCHEDULER ----------
-let nextOM = 0;
+let openMeteoStep = 0;
 async function ciclo() {
   console.log('--- ciclo', new Date().toISOString());
   await fetchWeatherComAll();
 
-  if (Date.now() >= nextOM) {
+  openMeteoStep = (openMeteoStep + 1) % 3;
+  if (openMeteoStep === 0) {
     await fetchOpenMeteoGroup();
-    const jitter = OPENMETEO_MIN + Math.floor(Math.random()*(OPENMETEO_MAX-OPENMETEO_MIN+1));
-    nextOM = Date.now() + jitter*60_000;
-    console.log('Open‑Meteo: prossimo gruppo fra', jitter, 'minuti');
+    console.log('Open‑Meteo: fetch effettuato (ogni 3 cicli)');
   }
 }
 
