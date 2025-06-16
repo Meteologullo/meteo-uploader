@@ -1,3 +1,21 @@
+// index_snellente.js – versione ottimizzata (15 giu 2025)
+// • Weather.com / PWS → ogni 10 min
+// • Open‑Meteo (solo temperatura) → un gruppo ≤100 stazioni ogni 30‑40 min
+//   → ~4 100 “unit” al giorno, molto sotto il limite 10k.
+
+import fetch from 'node-fetch';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+
+const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore();
+
+// ---------- CONFIG ----------
+const WEATHERCOM_INTERVAL_MIN = 10;
+const OPENMETEO_MIN = 30;   // intervallo minimo (min)
+const OPENMETEO_MAX = 40;   // intervallo massimo (min)
+const BATCH_SIZE = 150;     // max coordinate per request
 const OPENMETEO_PARAMS = 'temperature_2m';
 
 // ---------- STAZIONI ----------
@@ -178,7 +196,7 @@ const stazioni = [
   { stationId: "MARINA_DI_CAULONIA", lat: 38.389, lon: 16.463, openMeteo: true },
   { stationId: "MARINA_DI_GIOIOSA_IONICA", lat: 38.3, lon: 16.318, openMeteo: true },
   { stationId: "MARINA_DI_SANTILARIO_DELLO_IONIO", lat: 38.174, lon: 16.239, openMeteo: true },
-  { stationId: "MELICUCCÃ", lat: 38.35, lon: 15.942, openMeteo: true },
+  { stationId: "MELICUCCÀ", lat: 38.35, lon: 15.942, openMeteo: true },
   { stationId: "MESORACA", lat: 39.096, lon: 16.789, openMeteo: true },
   { stationId: "MIGLIERINA", lat: 39.001, lon: 16.444, openMeteo: true },
   { stationId: "MILETO", lat: 38.606, lon: 16.067, openMeteo: true },
@@ -209,13 +227,13 @@ const stazioni = [
   { stationId: "PAPASIDERO", lat: 39.87, lon: 15.9, openMeteo: true },
   { stationId: "PARAVATI", lat: 38.6, lon: 16.084, openMeteo: true },
   { stationId: "PETRIZZI", lat: 38.637, lon: 16.474, openMeteo: true },
-  { stationId: "PETRONÃ", lat: 39.118, lon: 16.632, openMeteo: true },
+  { stationId: "PETRONÀ", lat: 39.118, lon: 16.632, openMeteo: true },
   { stationId: "PIANOPOLI", lat: 38.957, lon: 16.319, openMeteo: true },
   { stationId: "PIETRAPAOLA", lat: 39.486, lon: 16.893, openMeteo: true },
   { stationId: "PIETRAPENNATA", lat: 38.187, lon: 15.956, openMeteo: true },
   { stationId: "PINO_GRANDE", lat: 39.32, lon: 16.75, openMeteo: true },
   { stationId: "PLATACI", lat: 39.9, lon: 16.43, openMeteo: true },
-  { stationId: "PLATÃ", lat: 38.19, lon: 16.094, openMeteo: true },
+  { stationId: "PLATÌ", lat: 38.19, lon: 16.094, openMeteo: true },
   { stationId: "POTAME", lat: 39.188, lon: 16.199, openMeteo: true },
   { stationId: "PRAIA_A_MARE", lat: 39.909, lon: 15.778, openMeteo: true },
   { stationId: "RENDE_QUATTR", lat: 39.354, lon: 16.242, openMeteo: true },
@@ -283,107 +301,116 @@ const stazioni = [
   { stationId: "VIGNE", lat: 39.357, lon: 16.869, openMeteo: true },
   { stationId: "VILLAGGIO_MANCUSO", lat: 39.022, lon: 16.608, openMeteo: true },
   { stationId: "VILLAGGIO_PALUMBO", lat: 39.215, lon: 16.762, openMeteo: true },
-  { stationId: "VILLAGGIO_TREPITÃ", lat: 38.386, lon: 16.453, openMeteo: true },
+  { stationId: "VILLAGGIO_TREPITÒ", lat: 38.386, lon: 16.453, openMeteo: true },
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
 // ---------- UTIL ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-
-
-
-
-// ---- CODICE FUNZIONALE RICOSTRUITO ----
-
-// -------------------- IMPORT --------------------
-import { db, Timestamp } from './firebase.js'; // Assumendo che usi Firebase setup
-import fetch from 'node-fetch';
-
-// -------------------- STATO FIRESTORE --------------------
-async function getStato() {
+async function salvaOsservazione(id, lat, lon, temp) {
   try {
-    const doc = await db.collection('_runtime').doc('openMeteoState').get();
-    return doc.exists ? doc.data() : { groupIdx: 0, retryUntil: {} };
-  } catch (e) {
-    console.error("ð¥ Errore lettura stato:", e.message);
-    return { groupIdx: 0, retryUntil: {} };
-  }
-}
-
-async function setStato(groupIdx, retryUntil) {
-  try {
-    await db.collection('_runtime').doc('openMeteoState').set({
-      groupIdx,
-      retryUntil,
-      updatedAt: Timestamp.now()
+    await db.collection('osservazioni').add({
+      stationId: id,
+      latitudine: lat,
+      longitudine: lon,
+      temperatura: temp,
+      timestamp: Timestamp.now()
     });
+    console.log('Salvato per', id);
   } catch (e) {
-    console.error("ð¥ Errore salvataggio stato:", e.message);
+    console.error('Errore salvataggio', id, e.message);
   }
 }
 
-// -------------------- FETCH OPEN-METEO --------------------
+// ---------- WEATHER.COM ----------
+async function fetchWeatherCom(st) {
+  try {
+    const url = 'https://api.weather.com/v2/pws/observations/current' + '?stationId=' + st.stationId + '&format=json&units=m&apiKey=' + st.apiKey;
+    const r = await fetch(url);
+    const raw = await r.text();
+    if (!raw.startsWith('{')) throw new Error('Risposta non valida');
+    const d = JSON.parse(raw).observations?.[0];
+    if (!d?.metric?.temp) return;
+    await salvaOsservazione(st.stationId, st.lat, st.lon, d.metric.temp);
+  } catch (err) {
+    console.error('Weather.com', st.stationId, err.message);
+  }
+}
+async function fetchWeatherComAll() {
+  for (const st of stazioni.filter(s => s.apiKey)) {
+    await fetchWeatherCom(st);
+  }
+}
+
+// ---------- OPEN‑METEO ----------
+function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+const omGroups = chunk(stazioni.filter(s => s.openMeteo), BATCH_SIZE);
+
+
 async function fetchOpenMeteoGroup(groupIdx) {
-  if (omGroups.length === 0) return null;
+  if (omGroups.length === 0) return;
   const batch = omGroups[groupIdx];
-  const lats = batch.map(s => s.lat).join(',');
-  const lons = batch.map(s => s.lon).join(',');
-  const url = 'https://api.open-meteo.com/v1/forecast' +
-              '?latitude=' + lats +
-              '&longitude=' + lons +
-              '&current=' + OPENMETEO_PARAMS +
-              '&timezone=auto';
+  groupIdx = (groupIdx + 1) % omGroups.length;
+
+  const lats = batch.map(s=>s.lat).join(',');
+  const lons = batch.map(s=>s.lon).join(',');
+  const url = 'https://api.open-meteo.com/v1/forecast' + '?latitude=' + lats + '&longitude=' + lons + '&current=' + OPENMETEO_PARAMS + '&timezone=auto';
 
   try {
     const r = await fetch(url);
-
-    if (r.status === 429) {
-      const waitMs = 30 * 60 * 1000;
-      console.warn(`â³ 429 â gruppo ${groupIdx} in pausa`);
-      return Date.now() + waitMs;
-    }
-
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
     const data = await r.json();
     const recs = Array.isArray(data) ? data : [data];
-    for (let i = 0; i < recs.length; i++) {
+    for (let i=0;i<recs.length;i++) {
       const cur = recs[i]?.current;
       if (!cur) continue;
       const st = batch[i];
       await salvaOsservazione(st.stationId, st.lat, st.lon, cur.temperature_2m);
     }
-
-    console.log(`â Open-Meteo gruppo ${groupIdx} completato`);
-    return null;
-
   } catch (err) {
-    console.error(`ð¥ OpenâMeteo gruppo ${groupIdx} errore:`, err.message);
-    return null;
+    console.error('Open‑Meteo batch', err.message);
   }
 }
 
-// -------------------- CICLO --------------------
+// ---------- SCHEDULER ----------
+
+(async function main() {
+  console.log("Contenitore avviato", new Date().toISOString());
+
+  // Primo ciclo subito all'avvio
+  await ciclo();
+
+  // Poi esegui ogni WEATHERCOM_INTERVAL_MIN minuti
+  console.log(`In attesa di ${WEATHERCOM_INTERVAL_MIN} minuti per il prossimo ciclo...`);
+  setInterval(ciclo, WEATHERCOM_INTERVAL_MIN * 60_000);
+})();
+
 async function ciclo() {
-  console.log('ð Inizio ciclo', new Date().toISOString());
-  await fetchWeatherComAll();
+  console.log('--- ciclo', new Date().toISOString());
 
-  const stato = await getStato();
-  const groupIdx = stato.groupIdx || 0;
-  const retryUntil = stato.retryUntil || {};
-  const now = Date.now();
-
-  if (!retryUntil[groupIdx] || now >= retryUntil[groupIdx]) {
-    const retry = await fetchOpenMeteoGroup(groupIdx);
-    if (retry) retryUntil[groupIdx] = retry;
-  } else {
-    console.log(`â­ï¸  gruppo ${groupIdx} in pausa fino a ${new Date(retryUntil[groupIdx]).toISOString()}`);
+  // 1) Fetch su Weather.com sempre
+  try {
+    await fetchWeatherComAll();
+    console.log('Weather.com: fetch completato');
+  } catch (err) {
+    console.error('Weather.com: errore', err);
   }
 
-  const nextIdx = (groupIdx + 1) % omGroups.length;
-  await setStato(nextIdx, retryUntil);
-}
+  // 2) Fetch su Open-Meteo solo quando il minuto UTC è multiplo di 30
+  const now = new Date();
+  const minute = now.getUTCMinutes();
+  const totalMinutes = now.getUTCHours() * 60 + minute;
+  const omIdx = Math.floor(totalMinutes / 30) % omGroups.length;
 
-// -------------------- ESECUZIONE PER CRON --------------------
-await ciclo();
+  if (minute % 30 === 0) {
+    try {
+      await fetchOpenMeteoGroup(omIdx);
+      console.log(`Open-Meteo: fetch gruppo ${omIdx} (minuto UTC ${minute})`);
+    } catch (err) {
+      console.error('Open-Meteo: errore', err);
+    }
+  } else {
+    console.log(`Open-Meteo: skip (minuto UTC ${minute} non multiplo di 30)`);
+  }
+}
