@@ -1,7 +1,7 @@
-// index.js – versione aggiornata (16 giu 2025)
-// • Weather.com / PWS → ogni 10 min
-// • Open-Meteo (solo temperatura) → un gruppo ≤100 stazioni ogni 30-40 min
-//   con retry/backoff in caso di 429 → ~4 100 “unit”/giorno, ben sotto il limite 10 k
+// index.js – versione aggiornata (17 giu 2025)
+// ✔ Batch ≤100 coordinate
+// ✔ Retry/backoff per HTTP 429
+// ✔ Solo 2 chiamate/ora a Open-Meteo (minuti 0 e 30 UTC)
 
 import fetch from 'node-fetch';
 import { initializeApp, cert } from 'firebase-admin/app';
@@ -13,12 +13,12 @@ const db = getFirestore();
 
 // ---------- CONFIG ----------
 const WEATHERCOM_INTERVAL_MIN = 10;
-const MAX_COORDS_PER_CALL = 100;  // limite ufficiale per Open-Meteo
-const RETRY_DELAY_MS = 60_000;    // 1 min tra i retry
+const MAX_COORDS_PER_CALL = 100;  // limite ufficiale Open-Meteo
+const RETRY_DELAY_MS = 60_000;    // 1 min tra retry su 429
 const OPENMETEO_PARAMS = 'temperature_2m';
 
 // ---------- STAZIONI ----------
-[
+const stazioni = [
   { stationId: "ICOSEN11", lat: 38.905, lon: 16.587, apiKey: "03d402e1e8844ac49402e1e8844ac419" },
   { stationId: "IAMANT7", lat: 39.143, lon: 16.062, apiKey: "a3f4ae4f9b6d46a4b4ae4f9b6d06a494" },
   { stationId: "ICELIC3", lat: 38.873, lon: 16.683, apiKey: "2d12def7f4894eca92def7f4892eca99" },
@@ -304,7 +304,6 @@ const OPENMETEO_PARAMS = 'temperature_2m';
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
-
 // ---------- UTIL ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -355,8 +354,10 @@ function chunk(arr, size) {
 const omGroups = chunk(stazioni.filter(s => s.openMeteo), MAX_COORDS_PER_CALL);
 
 async function fetchOpenMeteoGroup(groupIdx) {
-  if (!omGroups.length) return;
+  if (omGroups.length === 0) return;
   const batch = omGroups[groupIdx];
+  // Prossimo gruppo al prossimo invito
+  groupIdx = (groupIdx + 1) % omGroups.length;
 
   const lats = batch.map(s => s.lat).join(',');
   const lons = batch.map(s => s.lon).join(',');
@@ -367,7 +368,7 @@ async function fetchOpenMeteoGroup(groupIdx) {
   try {
     let r = await fetch(url);
     if (r.status === 429) {
-      console.warn(`Open-Meteo: rate limit (429). Ritento tra ${RETRY_DELAY_MS/1000}s…`);
+      console.warn(`Open-Meteo: 429 Too Many Requests. Ritento tra ${RETRY_DELAY_MS/1000}s…`);
       await sleep(RETRY_DELAY_MS);
       r = await fetch(url);
     }
@@ -388,17 +389,14 @@ async function fetchOpenMeteoGroup(groupIdx) {
 // ---------- SCHEDULER ----------
 (async function main() {
   console.log('Contenitore avviato', new Date().toISOString());
-
-  // Primo ciclo all'avvio
+  // Primo ciclo
   await ciclo();
-
   console.log(`In attesa di ${WEATHERCOM_INTERVAL_MIN} minuti…`);
   setInterval(ciclo, WEATHERCOM_INTERVAL_MIN * 60_000);
 })();
 
 async function ciclo() {
   console.log('--- ciclo', new Date().toISOString());
-
   // 1) Weather.com
   try {
     await fetchWeatherComAll();
@@ -406,7 +404,6 @@ async function ciclo() {
   } catch (err) {
     console.error('Weather.com: errore', err);
   }
-
   // 2) Open-Meteo solo ai minuti 0 e 30 UTC
   const now = new Date();
   const minute = now.getUTCMinutes();
