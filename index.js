@@ -1,7 +1,7 @@
-// index_snellente.js – versione ottimizzata (15 giu 2025)
+// index.js – versione aggiornata (16 giu 2025)
 // • Weather.com / PWS → ogni 10 min
-// • Open‑Meteo (solo temperatura) → un gruppo ≤100 stazioni ogni 30‑40 min
-//   → ~4 100 “unit” al giorno, molto sotto il limite 10k.
+// • Open-Meteo (solo temperatura) → un gruppo ≤100 stazioni ogni 30-40 min
+//   con retry/backoff in caso di 429 → ~4 100 “unit”/giorno, ben sotto il limite 10 k
 
 import fetch from 'node-fetch';
 import { initializeApp, cert } from 'firebase-admin/app';
@@ -13,13 +13,12 @@ const db = getFirestore();
 
 // ---------- CONFIG ----------
 const WEATHERCOM_INTERVAL_MIN = 10;
-const OPENMETEO_MIN = 30;   // intervallo minimo (min)
-const OPENMETEO_MAX = 40;   // intervallo massimo (min)
-const BATCH_SIZE = 150;     // max coordinate per request
+const MAX_COORDS_PER_CALL = 100;  // limite ufficiale per Open-Meteo
+const RETRY_DELAY_MS = 60_000;    // 1 min tra i retry
 const OPENMETEO_PARAMS = 'temperature_2m';
 
 // ---------- STAZIONI ----------
-const stazioni = [
+[
   { stationId: "ICOSEN11", lat: 38.905, lon: 16.587, apiKey: "03d402e1e8844ac49402e1e8844ac419" },
   { stationId: "IAMANT7", lat: 39.143, lon: 16.062, apiKey: "a3f4ae4f9b6d46a4b4ae4f9b6d06a494" },
   { stationId: "ICELIC3", lat: 38.873, lon: 16.683, apiKey: "2d12def7f4894eca92def7f4892eca99" },
@@ -305,6 +304,7 @@ const stazioni = [
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
 ];
 
+
 // ---------- UTIL ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -326,7 +326,8 @@ async function salvaOsservazione(id, lat, lon, temp) {
 // ---------- WEATHER.COM ----------
 async function fetchWeatherCom(st) {
   try {
-    const url = 'https://api.weather.com/v2/pws/observations/current' + '?stationId=' + st.stationId + '&format=json&units=m&apiKey=' + st.apiKey;
+    const url = 'https://api.weather.com/v2/pws/observations/current'
+      + `?stationId=${st.stationId}&format=json&units=m&apiKey=${st.apiKey}`;
     const r = await fetch(url);
     const raw = await r.text();
     if (!raw.startsWith('{')) throw new Error('Risposta non valida');
@@ -343,53 +344,62 @@ async function fetchWeatherComAll() {
   }
 }
 
-// ---------- OPEN‑METEO ----------
-function chunk(arr, size) { const out=[]; for (let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
-const omGroups = chunk(stazioni.filter(s => s.openMeteo), BATCH_SIZE);
-
+// ---------- OPEN-METEO ----------
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
+  }
+  return out;
+}
+const omGroups = chunk(stazioni.filter(s => s.openMeteo), MAX_COORDS_PER_CALL);
 
 async function fetchOpenMeteoGroup(groupIdx) {
-  if (omGroups.length === 0) return;
+  if (!omGroups.length) return;
   const batch = omGroups[groupIdx];
-  groupIdx = (groupIdx + 1) % omGroups.length;
 
-  const lats = batch.map(s=>s.lat).join(',');
-  const lons = batch.map(s=>s.lon).join(',');
-  const url = 'https://api.open-meteo.com/v1/forecast' + '?latitude=' + lats + '&longitude=' + lons + '&current=' + OPENMETEO_PARAMS + '&timezone=auto';
+  const lats = batch.map(s => s.lat).join(',');
+  const lons = batch.map(s => s.lon).join(',');
+  const url = 'https://api.open-meteo.com/v1/forecast'
+    + `?latitude=${lats}&longitude=${lons}`
+    + `&current=${OPENMETEO_PARAMS}&timezone=auto`;
 
   try {
-    const r = await fetch(url);
+    let r = await fetch(url);
+    if (r.status === 429) {
+      console.warn(`Open-Meteo: rate limit (429). Ritento tra ${RETRY_DELAY_MS/1000}s…`);
+      await sleep(RETRY_DELAY_MS);
+      r = await fetch(url);
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     const recs = Array.isArray(data) ? data : [data];
-    for (let i=0;i<recs.length;i++) {
+    for (let i = 0; i < recs.length; i++) {
       const cur = recs[i]?.current;
       if (!cur) continue;
       const st = batch[i];
       await salvaOsservazione(st.stationId, st.lat, st.lon, cur.temperature_2m);
     }
   } catch (err) {
-    console.error('Open‑Meteo batch', err.message);
+    console.error('Open-Meteo batch', err.message);
   }
 }
 
 // ---------- SCHEDULER ----------
-
 (async function main() {
-  console.log("Contenitore avviato", new Date().toISOString());
+  console.log('Contenitore avviato', new Date().toISOString());
 
-  // Primo ciclo subito all'avvio
+  // Primo ciclo all'avvio
   await ciclo();
 
-  // Poi esegui ogni WEATHERCOM_INTERVAL_MIN minuti
-  console.log(`In attesa di ${WEATHERCOM_INTERVAL_MIN} minuti per il prossimo ciclo...`);
+  console.log(`In attesa di ${WEATHERCOM_INTERVAL_MIN} minuti…`);
   setInterval(ciclo, WEATHERCOM_INTERVAL_MIN * 60_000);
 })();
 
 async function ciclo() {
   console.log('--- ciclo', new Date().toISOString());
 
-  // 1) Fetch su Weather.com sempre
+  // 1) Weather.com
   try {
     await fetchWeatherComAll();
     console.log('Weather.com: fetch completato');
@@ -397,13 +407,12 @@ async function ciclo() {
     console.error('Weather.com: errore', err);
   }
 
-  // 2) Fetch su Open-Meteo solo quando il minuto UTC è multiplo di 30
+  // 2) Open-Meteo solo ai minuti 0 e 30 UTC
   const now = new Date();
   const minute = now.getUTCMinutes();
-  const totalMinutes = now.getUTCHours() * 60 + minute;
-  const omIdx = Math.floor(totalMinutes / 30) % omGroups.length;
-
   if (minute % 30 === 0) {
+    const totalMinutes = now.getUTCHours() * 60 + minute;
+    const omIdx = Math.floor(totalMinutes / 30) % omGroups.length;
     try {
       await fetchOpenMeteoGroup(omIdx);
       console.log(`Open-Meteo: fetch gruppo ${omIdx} (minuto UTC ${minute})`);
