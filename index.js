@@ -411,7 +411,7 @@ async function ciclo() {
 
   const now = new Date();
   const minute = now.getUTCMinutes();
-  if (minute % 30 === 0) {
+  if ((minute % 30) <= 5) {
     try {
       const omIdx = await getNextGroupIndex();
       await fetchOpenMeteoGroup(omIdx);
