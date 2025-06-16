@@ -1,11 +1,11 @@
 // index.js – rotazione Open-Meteo senza letture Firestore + auto-slot – 16 giu 2025
 
 import fetch from 'node-fetch';
-import {{ initializeApp, cert }} from 'firebase-admin/app';
-import {{ getFirestore, Timestamp }} from 'firebase-admin/firestore';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-initializeApp({{ credential: cert(serviceAccount) }});
+initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 // ---------- CONFIG ----------
@@ -305,51 +305,51 @@ const stazioni = [
 // ---------- UTIL ----------
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function salvaOsservazione(id, lat, lon, temp) {{
-  try {{
-    await db.collection('osservazioni').add({{
+async function salvaOsservazione(id, lat, lon, temp) {
+  try {
+    await db.collection('osservazioni').add({
       stationId:   id,
       latitudine:  lat,
       longitudine: lon,
       temperatura: temp,
       timestamp:   Timestamp.now()
-    }});
+    });
     console.log('Salvato', id, temp);
-  }} catch (e) {{
+  } catch (e) {
     console.error('Errore salvataggio', id, e.message);
-  }}
-}}
+  }
+}
 
 // ---------- WEATHER.COM ----------
-async function fetchWeatherCom(st) {{
-  try {{
+async function fetchWeatherCom(st) {
+  try {
     const url = 'https://api.weather.com/v2/pws/observations/current'
-      + `?stationId=${{st.stationId}}&format=json&units=m&apiKey=${{st.apiKey}}`;
+      + `?stationId=${st.stationId}&format=json&units=m&apiKey=${st.apiKey}`;
     const r   = await fetch(url);
     const raw = await r.text();
-    if (!raw.startsWith('{{')) throw new Error('Risposta non valida');
+    if (!raw.startsWith('{')) throw new Error('Risposta non valida');
     const d   = JSON.parse(raw).observations?.[0];
     if (!d?.metric?.temp) return;
     await salvaOsservazione(st.stationId, st.lat, st.lon, d.metric.temp);
-  }} catch (err) {{
+  } catch (err) {
     console.error('Weather.com', st.stationId, err.message);
-  }}
-}}
-async function fetchWeatherComAll() {{
-  for (const st of stazioni.filter(s => s.apiKey)) {{
+  }
+}
+async function fetchWeatherComAll() {
+  for (const st of stazioni.filter(s => s.apiKey)) {
     await fetchWeatherCom(st);
-  }}
-}}
+  }
+}
 
 // ---------- OPEN-METEO ----------
-function chunk(arr, size) {{
+function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
-}}
+}
 const omGroups = chunk(stazioni.filter(s => s.openMeteo), MAX_COORDS_PER_CALL);
 
-async function fetchOpenMeteoGroup(groupIdx) {{
+async function fetchOpenMeteoGroup(groupIdx) {
   if (omGroups.length === 0) return;
   const batch = omGroups[groupIdx];
 
@@ -357,72 +357,72 @@ async function fetchOpenMeteoGroup(groupIdx) {{
   const lons = batch.map(s => s.lon).join(',');
 
   const url = 'https://api.open-meteo.com/v1/forecast'
-    + `?latitude=${{lats}}&longitude=${{lons}}`
-    + `&current=${{OPENMETEO_PARAMS}}&timezone=auto`;
+    + `?latitude=${lats}&longitude=${lons}`
+    + `&current=${OPENMETEO_PARAMS}&timezone=auto`;
 
-  try {{
+  try {
     let r = await fetch(url);
-    if (r.status === 429) {{
-      console.warn(`Open-Meteo 429: ritento tra ${{RETRY_DELAY_MS / 1000}}s…`);
+    if (r.status === 429) {
+      console.warn(`Open-Meteo 429: ritento tra ${RETRY_DELAY_MS / 1000}s…`);
       await sleep(RETRY_DELAY_MS);
       r = await fetch(url);
-    }}
-    if (!r.ok) throw new Error(`HTTP ${{r.status}}`);
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     const recs = Array.isArray(data) ? data : [data];
-    for (let i = 0; i < recs.length; i++) {{
+    for (let i = 0; i < recs.length; i++) {
       const cur = recs[i]?.current;
       if (!cur) continue;
       const st = batch[i];
       await salvaOsservazione(st.stationId, st.lat, st.lon, cur.temperature_2m);
-    }}
-    console.log(`Open-Meteo: gruppo ${{groupIdx}} aggiornato`);
-  }} catch (err) {{
+    }
+    console.log(`Open-Meteo: gruppo ${groupIdx} aggiornato`);
+  } catch (err) {
     console.error('Open-Meteo batch', err.message);
-  }}
-}}
+  }
+}
 
 // ---------- ROTAZIONE “A SLOT” (zero letture Firestore) ----------
 let lastOmSlot = -1;   // ricorda l’ultimo slot già servito (solo in RAM)
 
-function getCurrentSlot() {{
+function getCurrentSlot() {
   return Math.floor(Date.now() / HALF_HOUR_MS);          // 1 slot = 30 minuti
-}}
-function getGroupIndexFromSlot(slot) {{
+}
+function getGroupIndexFromSlot(slot) {
   return slot % omGroups.length;
-}}
+}
 
 // ---------- SCHEDULER ----------
-(async function main() {{
+(async function main() {
   console.log('Contenitore avviato', new Date().toISOString());
   await ciclo();                                        // run immediato
   setInterval(ciclo, WEATHERCOM_INTERVAL_MIN * 60_000); // poi ogni 10′
-}})();
+})();
 
-async function ciclo() {{
+async function ciclo() {
   const now = new Date();
   console.log('--- ciclo', now.toISOString());
 
   // 1. Weather.com (sempre)
-  try {{
+  try {
     await fetchWeatherComAll();
     console.log('Weather.com: fetch completato');
-  }} catch (err) {{
+  } catch (err) {
     console.error('Weather.com: errore', err);
-  }}
+  }
 
   // 2. Open-Meteo (al massimo una volta per slot di 30′)
-  try {{
+  try {
     const slotNow = getCurrentSlot();
-    if (slotNow !== lastOmSlot) {{
+    if (slotNow !== lastOmSlot) {
       const omIdx = getGroupIndexFromSlot(slotNow);
-      console.log(`[rotazione] slot=${{slotNow}} → gruppo=${{omIdx}}/${{omGroups.length - 1}}`);
+      console.log(`[rotazione] slot=${slotNow} → gruppo=${omIdx}/${omGroups.length - 1}`);
       await fetchOpenMeteoGroup(omIdx);
       lastOmSlot = slotNow;
-    }} else {{
-      console.log(`Open-Meteo: già processato slot ${{slotNow}}`);
-    }}
-  }} catch (err) {{
+    } else {
+      console.log(`Open-Meteo: già processato slot ${slotNow}`);
+    }
+  } catch (err) {
     console.error('Open-Meteo: errore', err);
-  }}
-}}
+  }
+}
