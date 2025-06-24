@@ -300,6 +300,13 @@ const stazioni = [
   { stationId: "VILLAGGIO_PALUMBO", lat: 39.215, lon: 16.762, openMeteo: true },
   { stationId: "VILLAGGIO_TREPITÒ", lat: 38.386, lon: 16.453, openMeteo: true },
   { stationId: "ZAMBRONE", lat: 38.695, lon: 15.959, openMeteo: true },
+  { stationId: "IAMANT5",  lat: 39.070,    lon: 16.090,    apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
+  { stationId: "ICATAN51", lat: 38.900,    lon: 16.590,    apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
+  { stationId: "ICROTO21", lat: 39.080,    lon: 17.130,    apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
+  { stationId: "IMONTA161",lat: 39.490,    lon: 16.210,    apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
+  { stationId: "ILONGO4",  lat: 39.196082, lon: 16.064474, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
+  { stationId: "ICOSEN12", lat: 39.270,    lon: 16.260,    apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
+  { stationId: "IAPRIG9",  lat: 39.240,    lon: 16.340,    apiKey: "e1f10a1e78da46f5b10a1e78da96f525" },
 ];
 
 // ---------- UTIL ----------
