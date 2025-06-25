@@ -40,7 +40,7 @@ const stazioni = [
   { stationId: "PETILIA", lat: 39.13, lon: 16.77, openMeteo: true },
   { stationId: "TROPEA", lat: 38.68, lon: 15.9, openMeteo: true },
   { stationId: "GERACE", lat: 38.27, lon: 16.23, openMeteo: true },
-  { stationId: "SPEZSILA", lat: 39.33, lon: 16.38, openMeteo: true },
+  { stationId: "SPEZSILA", lat: 39.30, lon: 16.33, openMeteo: true },
   { stationId: "PAOLA", lat: 39.37, lon: 16.03, openMeteo: true },
   { stationId: "BELVEDERE", lat: 39.61, lon: 15.86, openMeteo: true },
   { stationId: "MORMANNO", lat: 39.92, lon: 15.97, openMeteo: true },
