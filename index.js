@@ -368,12 +368,12 @@ async function fetchWeatherCom(st) {
       const r = await fetch(url);
 
       if (r.status === 429) {                          // rate‑limit Weather.com free tier
-        console.warn(\`Weather.com 429 \${st.stationId}: attendo 10 s e ritento…\`);
+        console.warn(`Weather.com 429 ${st.stationId}: attendo 10 s e ritento…`);
         await sleep(10_000);
         attempts++;
         continue;
       }
-      if (!r.ok) throw new Error(\`HTTP \${r.status}\`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
       const raw = await r.text();
       if (!raw.startsWith('{')) throw new Error('Risposta non valida');
