@@ -24,8 +24,8 @@ const stazioni = [
 { stationId: "ICOSEN19", lat: 39.32, lon:  16.25, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // CS Viale Parco
 { stationId: "IRENDE25", lat: 39.34, lon:  16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Rende Santa Chiara
 { stationId: "ISANPI41", lat: 39.34, lon: 16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // S. Pietro in G. Est
-// { stationId: "ITEST0004", lat: 43.769, lon: 11.255, apiKey: "laTuaApiKeyQui" }, // Firenze centro
-// { stationId: "ITEST0005", lat: 41.902, lon: 12.496, apiKey: "laTuaApiKeyQui" }, // Roma centro storico
+{ stationId: "ICASAL59", lat: 39.28, lon: 16.33, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Casali del M. Verticelli
+{ stationId: "ICATAN48", lat: 38.87, lon: 16.60, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Catanzaro Santa Maria
 // { stationId: "ITEST0006", lat: 40.851, lon: 14.268, apiKey: "laTuaApiKeyQui" }, // Napoli centro
 // { stationId: "ITEST0007", lat: 38.115, lon: 13.362, apiKey: "laTuaApiKeyQui" }, // Palermo centro
 // { stationId: "ITEST0008", lat: 37.507, lon: 15.083, apiKey: "laTuaApiKeyQui" }, // Catania litorale
