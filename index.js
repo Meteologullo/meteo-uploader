@@ -21,9 +21,9 @@ const stazioni = [
 // ESEMPI RAPIDI PER NUOVE STAZIONI WU (lista estesa)
 // (copia una riga, togli // e sostituisci i valori con i tuoi)
 // -----------------------------------------
-// { stationId: "ICOSEN19", lat: 39.32, lon:  16.25, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // CS Viale Parco
-// { stationId: "IRENDE25", lat: 39.34, lon:  16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Rende Santa Chiara
-// { stationId: "ISANPI41", lat: 39.34, lon: 16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // S. Pietro in G. Est
+{ stationId: "ICOSEN19", lat: 39.32, lon:  16.25, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // CS Viale Parco
+{ stationId: "IRENDE25", lat: 39.34, lon:  16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Rende Santa Chiara
+{ stationId: "ISANPI41", lat: 39.34, lon: 16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // S. Pietro in G. Est
 // { stationId: "ITEST0004", lat: 43.769, lon: 11.255, apiKey: "laTuaApiKeyQui" }, // Firenze centro
 // { stationId: "ITEST0005", lat: 41.902, lon: 12.496, apiKey: "laTuaApiKeyQui" }, // Roma centro storico
 // { stationId: "ITEST0006", lat: 40.851, lon: 14.268, apiKey: "laTuaApiKeyQui" }, // Napoli centro
