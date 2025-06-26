@@ -17,6 +17,35 @@ const HALF_HOUR_MS          = 30 * 60 * 1000;
 
 // ---------- STAZIONI ----------
 const stazioni = [
+// =========================================
+// ESEMPI RAPIDI PER NUOVE STAZIONI WU (lista estesa)
+// (copia una riga, togli // e sostituisci i valori con i tuoi)
+// -----------------------------------------
+// { stationId: "ITEST0001", lat: 45.463, lon:  9.190, apiKey: "laTuaApiKeyQui" }, // Milano centro
+// { stationId: "ITEST0002", lat: 45.070, lon:  7.686, apiKey: "laTuaApiKeyQui" }, // Torino centro
+// { stationId: "ITEST0003", lat: 44.494, lon: 11.343, apiKey: "laTuaApiKeyQui" }, // Bologna centro
+// { stationId: "ITEST0004", lat: 43.769, lon: 11.255, apiKey: "laTuaApiKeyQui" }, // Firenze centro
+// { stationId: "ITEST0005", lat: 41.902, lon: 12.496, apiKey: "laTuaApiKeyQui" }, // Roma centro storico
+// { stationId: "ITEST0006", lat: 40.851, lon: 14.268, apiKey: "laTuaApiKeyQui" }, // Napoli centro
+// { stationId: "ITEST0007", lat: 38.115, lon: 13.362, apiKey: "laTuaApiKeyQui" }, // Palermo centro
+// { stationId: "ITEST0008", lat: 37.507, lon: 15.083, apiKey: "laTuaApiKeyQui" }, // Catania litorale
+// { stationId: "ITEST0009", lat: 41.117, lon: 16.871, apiKey: "laTuaApiKeyQui" }, // Bari porto
+// { stationId: "ITEST0010", lat: 39.223, lon:  9.121, apiKey: "laTuaApiKeyQui" }, // Cagliari lungomare
+// { stationId: "ITEST0011", lat: 45.898, lon:  8.958, apiKey: "laTuaApiKeyQui" }, // Varese prealpino
+// { stationId: "ITEST0012", lat: 46.540, lon: 11.679, apiKey: "laTuaApiKeyQui" }, // Val Gardena montagna
+// { stationId: "ITEST0013", lat: 46.067, lon: 11.121, apiKey: "laTuaApiKeyQui" }, // Trento valle
+// { stationId: "ITEST0014", lat: 42.131, lon: 12.675, apiKey: "laTuaApiKeyQui" }, // Lago di Bracciano
+// { stationId: "ITEST0015", lat: 40.730, lon:  8.561, apiKey: "laTuaApiKeyQui" }, // Alghero aeroporto
+// { stationId: "ITEST0016", lat: 45.438, lon: 12.328, apiKey: "laTuaApiKeyQui" }, // Venezia laguna
+// { stationId: "ITEST0017", lat: 43.076, lon:  9.713, apiKey: "laTuaApiKeyQui" }, // Isola d'Elba costa
+// { stationId: "ITEST0018", lat: 44.058, lon: 10.143, apiKey: "laTuaApiKeyQui" }, // La Spezia golfo
+// { stationId: "ITEST0019", lat: 45.800, lon:  9.086, apiKey: "laTuaApiKeyQui" }, // Como lago
+// { stationId: "ITEST0020", lat: 37.091, lon: 14.212, apiKey: "laTuaApiKeyQui" }, // Ragusa campagna
+// { stationId: "ITEST0021", lat: 41.893, lon:  8.738, apiKey: "laTuaApiKeyQui" }, // Ajaccio Corsica
+// { stationId: "ITEST0022", lat: 48.856, lon:  2.352, apiKey: "laTuaApiKeyQui" }, // Parigi Francia
+// { stationId: "ITEST0023", lat: 51.507, lon: -0.128, apiKey: "laTuaApiKeyQui" }, // Londra UK
+// { stationId: "ITEST0024", lat: 40.712, lon: -74.006, apiKey: "laTuaApiKeyQui" }, // New York USA
+// =========================================
 { stationId: "ICOSEN11", lat: 38.905, lon: 16.587, apiKey: "03d402e1e8844ac49402e1e8844ac419" },
   { stationId: "IAMANT7", lat: 39.143, lon: 16.062, apiKey: "a3f4ae4f9b6d46a4b4ae4f9b6d06a494" },
   { stationId: "ICELIC3", lat: 38.873, lon: 16.683, apiKey: "2d12def7f4894eca92def7f4892eca99" },
