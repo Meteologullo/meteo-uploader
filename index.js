@@ -357,23 +357,46 @@ async function salvaOsservazione(id, lat, lon, temp) {
 }
 
 // ---------- WEATHER.COM ----------
+// --- Patch 26 giu 2025: gestione 429 + throttle Weather.com ---
+
 async function fetchWeatherCom(st) {
-  try {
-    const url = 'https://api.weather.com/v2/pws/observations/current'
-      + `?stationId=${st.stationId}&format=json&units=m&apiKey=${st.apiKey}`;
-    const r   = await fetch(url);
-    const raw = await r.text();
-    if (!raw.startsWith('{')) throw new Error('Risposta non valida');
-    const d   = JSON.parse(raw).observations?.[0];
-    if (!d?.metric?.temp) return;
-    await salvaOsservazione(st.stationId, st.lat, st.lon, d.metric.temp);
-  } catch (err) {
-    console.error('Weather.com', st.stationId, err.message);
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      const url = 'https://api.weather.com/v2/pws/observations/current'
+        + `?stationId=${st.stationId}&format=json&units=m&apiKey=${st.apiKey}`;
+      const r = await fetch(url);
+
+      if (r.status === 429) {                          // rate‑limit Weather.com free tier
+        console.warn(\`Weather.com 429 \${st.stationId}: attendo 10 s e ritento…\`);
+        await sleep(10_000);
+        attempts++;
+        continue;
+      }
+      if (!r.ok) throw new Error(\`HTTP \${r.status}\`);
+
+      const raw = await r.text();
+      if (!raw.startsWith('{')) throw new Error('Risposta non valida');
+      const d = JSON.parse(raw).observations?.[0];
+      if (d?.metric?.temp !== undefined) {
+        await salvaOsservazione(st.stationId, st.lat, st.lon, d.metric.temp);
+      } else {
+        console.warn('Weather.com', st.stationId, 'temperatura mancante');
+      }
+      return; // success, esce dal while
+    } catch (err) {
+      console.error('Weather.com', st.stationId, err.message);
+      return;
+    }
   }
 }
 async function fetchWeatherComAll() {
-  for (const st of stazioni.filter(s => s.apiKey)) {
-    await fetchWeatherCom(st);
+  const wuStations = stazioni.filter(s => s.apiKey);
+  for (let i = 0; i < wuStations.length; i++) {
+    await fetchWeatherCom(wuStations[i]);
+
+    // Throttle per evitare limite Weather.com (≈1q/s free; 1.5s è sicuro)
+    if (i < wuStations.length - 1) await sleep(1500);
   }
 }
 
