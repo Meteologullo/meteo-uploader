@@ -26,7 +26,7 @@ const stazioni = [
 { stationId: "ISANPI41", lat: 39.34, lon: 16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // S. Pietro in G. Est
 { stationId: "ICASAL59", lat: 39.28, lon: 16.33, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Casali del M. Verticelli
 { stationId: "ICATAN48", lat: 38.87, lon: 16.60, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Catanzaro Santa Maria
-// { stationId: "ITEST0006", lat: 40.851, lon: 14.268, apiKey: "laTuaApiKeyQui" }, // Napoli centro
+{ stationId: "ILUZZI4", lat: 39.45, lon: 16.26, apiKey: "e1f10a1e78da46f5b10a1e78da96f525" }, // Luzzi Cavoni
 // { stationId: "ITEST0007", lat: 38.115, lon: 13.362, apiKey: "laTuaApiKeyQui" }, // Palermo centro
 // { stationId: "ITEST0008", lat: 37.507, lon: 15.083, apiKey: "laTuaApiKeyQui" }, // Catania litorale
 // { stationId: "ITEST0009", lat: 41.117, lon: 16.871, apiKey: "laTuaApiKeyQui" }, // Bari porto
